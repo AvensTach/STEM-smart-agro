@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37614.0 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartAgro.Backend", "SmartAgro.Backend\SmartAgro.Backend.csproj", "{F1E41221-3616-4307-9F17-0CFD41F371C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartAgro.Shared", "SmartAgro.Shared\SmartAgro.Shared.csproj", "{FD369DFC-8EAE-4507-8563-CB0C636CFD03}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F1E41221-3616-4307-9F17-0CFD41F371C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1E41221-3616-4307-9F17-0CFD41F371C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1E41221-3616-4307-9F17-0CFD41F371C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1E41221-3616-4307-9F17-0CFD41F371C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD369DFC-8EAE-4507-8563-CB0C636CFD03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD369DFC-8EAE-4507-8563-CB0C636CFD03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD369DFC-8EAE-4507-8563-CB0C636CFD03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD369DFC-8EAE-4507-8563-CB0C636CFD03}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8FE237C4-E735-42E2-BDB3-05B4B2130444}
+	EndGlobalSection
+EndGlobal

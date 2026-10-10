@@ -1,0 +1,6 @@
+@SmartAgro.Backend_HostAddress = http://localhost:5297
+
+GET {{SmartAgro.Backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
