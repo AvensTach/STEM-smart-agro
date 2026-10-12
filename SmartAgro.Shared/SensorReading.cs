@@ -8,10 +8,10 @@ namespace SmartAgro.Shared
 {
     public class SensorReading
     {
-        public int Id { get; set; } // Унікальний ідентифікатор у базі
-        public double Temperature { get; set; } // Температура
-        public double SoilHumidity { get; set; } // Вологість ґрунту
-        public double LightLevel { get; set; } // Рівень освітлення
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Час запису
+        public int Id { get; set; } 
+        public double Temperature { get; set; }
+        public double SoilHumidity { get; set; } 
+        public double LightLevel { get; set; } 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
