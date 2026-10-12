@@ -19,7 +19,7 @@ namespace SmartAgro.IoT
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             // Update this with the real URL when the backend is ready
-            string apiUrl = "http://localhost:5000/api/microclimate";
+            string apiUrl = "http://localhost:5297/api/microclimate";
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -44,8 +44,8 @@ namespace SmartAgro.IoT
                     // COMMENTED OUT UNTIL THE SERVER IS READY. 
                     // When your teammate says the API is ready, just uncomment these lines:
 
-                    // var response = await _httpClient.PostAsJsonAsync(apiUrl, reading, stoppingToken);
-                    // _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
+                    var response = await _httpClient.PostAsJsonAsync(apiUrl, reading, stoppingToken);
+                    _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
                 }
                 catch (Exception ex)
                 {

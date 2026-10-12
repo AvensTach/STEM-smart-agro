@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "SmartAgro.Backend\\SmartAgro.Backend.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "SmartAgro.Frontend\\SmartAgro.Frontend.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "SmartAgro.IoT\\SmartAgro.IoT.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
