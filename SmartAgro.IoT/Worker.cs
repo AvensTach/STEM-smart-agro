@@ -20,38 +20,41 @@ namespace SmartAgro.IoT
         {
             // Update this with the real URL when the backend is ready
             string apiUrl = "http://localhost:5000/api/microclimate";
+            int numberOfSensors = 3; // the number of objects for which to generate data
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                // 1. Generate random microclimate data
-                var reading = new SensorReading
+                for (int i = 1; i <= numberOfSensors; i++)
                 {
-                    // Id is omitted; the server's database will generate it
-                    Temperature = Math.Round(_random.NextDouble() * (35.0 - 10.0) + 10.0, 1), // From 10.0 to 35.0 °C
-                    SoilHumidity = Math.Round(_random.NextDouble() * (80.0 - 30.0) + 30.0, 1), // From 30.0 to 80.0 %
-                    LightLevel = _random.Next(100, 1000), // From 100 to 1000 lux
-                    CreatedAt = DateTime.UtcNow
-                };
+                    // 1. Generate random microclimate data
+                    var reading = new SensorReading
+                    {
+                        // Id is omitted; the server's database will generate it
+                        Temperature = Math.Round(_random.NextDouble() * (35.0 - 10.0) + 10.0, 1), // From 10.0 to 35.0 °C
+                        SoilHumidity = Math.Round(_random.NextDouble() * (80.0 - 30.0) + 30.0, 1), // From 30.0 to 80.0 %
+                        LightLevel = _random.Next(100, 1000), // From 100 to 1000 lux
+                        CreatedAt = DateTime.UtcNow
+                    };
 
-                // Output to console to verify the program is running
-                _logger.LogInformation("Generated: Temp: {Temp}°C, Humidity: {Hum}%", reading.Temperature, reading.SoilHumidity);
+                    // Output to console to verify the program is running
+                    _logger.LogInformation("Generated: Temp: {Temp}°C, Humidity: {Hum}%", reading.Temperature, reading.SoilHumidity);
 
-                try
-                {
-                    // 2. Send data to the server. 
-                    // PostAsJsonAsync automatically serializes the 'reading' object to JSON
+                    try
+                    {
+                        // 2. Send data to the server. 
+                        // PostAsJsonAsync automatically serializes the 'reading' object to JSON
 
-                    // COMMENTED OUT UNTIL THE SERVER IS READY. 
-                    // When your teammate says the API is ready, just uncomment these lines:
+                        // COMMENTED OUT UNTIL THE SERVER IS READY. 
+                        // When your teammate says the API is ready, just uncomment these lines:
 
-                    // var response = await _httpClient.PostAsJsonAsync(apiUrl, reading, stoppingToken);
-                    // _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
+                        // var response = await _httpClient.PostAsJsonAsync(apiUrl, reading, stoppingToken);
+                        // _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Failed to send data: {Message}", ex.Message);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError("Failed to send data: {Message}", ex.Message);
-                }
-
                 // 3. Wait for 5 seconds before the next generation
                 await Task.Delay(5000, stoppingToken);
             }
