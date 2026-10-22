@@ -8,7 +8,10 @@ namespace SmartAgro.Backend.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<SensorReading> SensorReadings { get; set; }
-        public DbSet<SensorConfig> Sensors { get; set; } 
+
+        public DbSet<SensorConfig> Sensors { get; set; }
+
+        public DbSet<SensorReadingHistory> SensorReadingsHistory { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
