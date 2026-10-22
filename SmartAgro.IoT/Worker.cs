@@ -24,19 +24,30 @@ namespace SmartAgro.IoT
 
             List<SensorConfig> activeSensors = new List<SensorConfig>();
 
+            DateTime lastConfigFetch = DateTime.MinValue;
+            TimeSpan configRefreshInterval = TimeSpan.FromSeconds(30); // Update frequency (every 30 sec)
+
             while (!stoppingToken.IsCancellationRequested)
             {
-                // 1. Try to fetch the sensor list if we don't have it yet
-                // (You can also modify this to refresh the list periodically)
-                if (activeSensors.Count == 0)
+                // 1.Update the configuration if the list is empty OR the update interval has passed
+                if (activeSensors.Count == 0 || DateTime.UtcNow - lastConfigFetch > configRefreshInterval)
                 {
-                    activeSensors = await FetchSensorConfigurationAsync(configUrl, stoppingToken);
+                    var refreshedSensors = await FetchSensorConfigurationAsync(configUrl, stoppingToken);
 
-                    if (activeSensors.Count == 0)
+                    if (refreshedSensors.Count > 0)
+                    {
+                        activeSensors = refreshedSensors;
+                        lastConfigFetch = DateTime.UtcNow;
+                    }
+                    else if (activeSensors.Count == 0)
                     {
                         _logger.LogWarning("No sensors configured or server unreachable. Waiting...");
                         await Task.Delay(5000, stoppingToken);
-                        continue; // Skip generation until we have sensors
+                        continue; // Skip generation if there are no sensors
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to refresh sensor config. Continuing with previous config.");
                     }
                 }
 
