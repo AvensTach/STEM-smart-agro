@@ -25,7 +25,7 @@ namespace SmartAgro.IoT
             List<SensorConfig> activeSensors = new List<SensorConfig>();
 
             DateTime lastConfigFetch = DateTime.MinValue;
-            TimeSpan configRefreshInterval = TimeSpan.FromSeconds(30); // Update frequency (every 30 sec)
+            TimeSpan configRefreshInterval = TimeSpan.FromSeconds(60); // Update frequency (every 60 sec)
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -78,8 +78,8 @@ namespace SmartAgro.IoT
                     }
                 }
 
-                // 4. Wait for 5 seconds before the next generation cycle
-                await Task.Delay(5000, stoppingToken);
+                // 4. Wait for 60 seconds before the next generation cycle
+                await Task.Delay(60000, stoppingToken);
             }
         }
 
