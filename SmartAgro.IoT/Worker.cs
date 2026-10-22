@@ -1,5 +1,6 @@
-using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
 using SmartAgro.Shared;
+using System.Net.Http.Json;
 
 namespace SmartAgro.IoT
 {
@@ -8,24 +9,36 @@ namespace SmartAgro.IoT
         private readonly ILogger<Worker> _logger;
         private readonly HttpClient _httpClient;
         private readonly Random _random;
+        private readonly IConfiguration _configuration;
 
-        public Worker(ILogger<Worker> logger)
+        public Worker(ILogger<Worker> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
             _httpClient = new HttpClient();
             _random = new Random();
+
+            var apiKey = _configuration["ApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                _httpClient.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+            }
+            else
+            {
+                _logger.LogWarning("API Key is missing in User Secrets!");
+            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             // Update these URLs to match your actual backend routing
-            string configUrl = "http://localhost:5000/api/sensors";
-            string telemetryUrl = "http://localhost:5000/api/microclimate";
+            string configUrl = "http://localhost:5297/api/sensors";
+            string telemetryUrl = "http://localhost:5297/api/microclimate";
 
             List<SensorConfig> activeSensors = new List<SensorConfig>();
 
             DateTime lastConfigFetch = DateTime.MinValue;
-            TimeSpan configRefreshInterval = TimeSpan.FromSeconds(30); // Update frequency (every 30 sec)
+            TimeSpan configRefreshInterval = TimeSpan.FromSeconds(60); // Update frequency (every 60 sec)
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -68,9 +81,8 @@ namespace SmartAgro.IoT
 
                     try
                     {
-                        // 3. Send data to the server (Uncomment when API is ready)
-                        // var response = await _httpClient.PostAsJsonAsync(telemetryUrl, reading, stoppingToken);
-                        // _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
+                        var response = await _httpClient.PostAsJsonAsync(telemetryUrl, reading, stoppingToken);
+                        _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
                     }
                     catch (Exception ex)
                     {
@@ -78,8 +90,8 @@ namespace SmartAgro.IoT
                     }
                 }
 
-                // 4. Wait for 5 seconds before the next generation cycle
-                await Task.Delay(5000, stoppingToken);
+                // 4. Wait for 60 seconds before the next generation cycle
+                await Task.Delay(60000, stoppingToken);
             }
         }
 
