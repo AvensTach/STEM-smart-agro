@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartAgro.Backend.Data;
+using SmartAgro.Backend.Hubs;
 using SmartAgro.Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHostedService<DataArchiverService>();
 builder.Services.AddHostedService<DataCleanupService>();
+builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=smartagro.db"));
@@ -31,5 +33,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<MicroclimateHub>("/hubs/microclimate");
 
 app.Run();

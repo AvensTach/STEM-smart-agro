@@ -69,6 +69,32 @@ namespace SmartAgro.Backend.Migrations
 
                     b.ToTable("SensorReadings");
                 });
+
+            modelBuilder.Entity("SmartAgro.Shared.SensorReadingHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("LightLevel")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("SensorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("SoilHumidity")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Temperature")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SensorReadingsHistory");
+                });
 #pragma warning restore 612, 618
         }
     }
