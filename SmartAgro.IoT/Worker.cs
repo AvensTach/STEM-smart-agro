@@ -31,9 +31,9 @@ namespace SmartAgro.IoT
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Update this with the real URL when the backend is ready
-            string apiUrl = "http://localhost:5297/api/microclimate";
-            int numberOfSensors = 3; // the number of objects for which to generate data
+            // Update these URLs to match your actual backend routing
+            string configUrl = "http://localhost:5297/api/sensors";
+            string telemetryUrl = "http://localhost:5297/api/microclimate";
 
             List<SensorConfig> activeSensors = new List<SensorConfig>();
 
@@ -76,7 +76,7 @@ namespace SmartAgro.IoT
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%",
+                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}?C, Humidity: {Hum}%",
                         sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity);
 
                     try
@@ -105,19 +105,18 @@ namespace SmartAgro.IoT
                 // Expecting the server to return a JSON array like: [{"id": 1, "name": "Greenhouse 1"}, ...]
                 var sensors = await _httpClient.GetFromJsonAsync<List<SensorConfig>>(url, stoppingToken);
 
-                        var response = await _httpClient.PostAsJsonAsync(apiUrl, reading, stoppingToken);
-                        _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError("Failed to send data: {Message}", ex.Message);
-                    }
+                if (sensors != null && sensors.Any())
+                {
+                    _logger.LogInformation("Successfully loaded {Count} sensors.", sensors.Count);
+                    return sensors;
                 }
-                // 3. Wait for 5 seconds before the next generation
-                await Task.Delay(5000, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to fetch sensor configuration: {Message}", ex.Message);
             }
 
             return new List<SensorConfig>(); // Return empty list on failure
-        }   
+        }
     }
 }
