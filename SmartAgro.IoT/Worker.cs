@@ -76,7 +76,7 @@ namespace SmartAgro.IoT
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%",
+                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}?C, Humidity: {Hum}%",
                         sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity);
 
                     try
@@ -117,6 +117,6 @@ namespace SmartAgro.IoT
             }
 
             return new List<SensorConfig>(); // Return empty list on failure
-        }   
+        }
     }
 }
