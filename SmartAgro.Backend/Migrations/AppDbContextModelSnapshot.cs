@@ -17,6 +17,33 @@ namespace SmartAgro.Backend.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
 
+            modelBuilder.Entity("SmartAgro.Shared.SensorConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sensors");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Теплиця 1 (Томати)"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Поле 3 (Пшениця)"
+                        });
+                });
+
             modelBuilder.Entity("SmartAgro.Shared.SensorReading", b =>
                 {
                     b.Property<int>("Id")
@@ -28,6 +55,9 @@ namespace SmartAgro.Backend.Migrations
 
                     b.Property<double>("LightLevel")
                         .HasColumnType("REAL");
+
+                    b.Property<int>("SensorId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<double>("SoilHumidity")
                         .HasColumnType("REAL");
