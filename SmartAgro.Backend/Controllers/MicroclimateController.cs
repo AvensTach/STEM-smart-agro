@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using SmartAgro.Backend.Attributes;
 using SmartAgro.Backend.Data;
+using SmartAgro.Backend.Hubs;
 using SmartAgro.Shared;
 
 namespace SmartAgro.Backend.Controllers
@@ -10,22 +13,27 @@ namespace SmartAgro.Backend.Controllers
     public class MicroclimateController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<MicroclimateHub> _hubContext;
 
-        public MicroclimateController(AppDbContext context)
+        public MicroclimateController(AppDbContext context, IHubContext<MicroclimateHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         // POST: api/microclimate 
         [HttpPost]
+        [ApiKey]
         public async Task<IActionResult> PostReading([FromBody] SensorReading reading)
         {
-            reading.CreatedAt = DateTime.UtcNow; 
+            reading.CreatedAt = DateTime.UtcNow;
 
             _context.SensorReadings.Add(reading);
             await _context.SaveChangesAsync();
 
-            return Ok(reading); // 200 ok
+            await _hubContext.Clients.All.SendAsync("ReceiveNewReading", reading);
+
+            return Ok(reading);
         }
 
         // GET: api/microclimate
