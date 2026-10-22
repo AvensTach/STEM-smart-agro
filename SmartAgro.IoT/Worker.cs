@@ -12,52 +12,88 @@ namespace SmartAgro.IoT
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
-            _httpClient = new HttpClient(); // Our client for sending requests
-            _random = new Random();         // Random number generator
+            _httpClient = new HttpClient();
+            _random = new Random();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Update this with the real URL when the backend is ready
-            string apiUrl = "http://localhost:5000/api/microclimate";
-            int numberOfSensors = 3; // the number of objects for which to generate data
+            // Update these URLs to match your actual backend routing
+            string configUrl = "http://localhost:5000/api/sensors";
+            string telemetryUrl = "http://localhost:5000/api/microclimate";
+
+            List<SensorConfig> activeSensors = new List<SensorConfig>();
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                for (int i = 1; i <= numberOfSensors; i++)
+                // 1. Try to fetch the sensor list if we don't have it yet
+                // (You can also modify this to refresh the list periodically)
+                if (activeSensors.Count == 0)
                 {
-                    // 1. Generate random microclimate data
+                    activeSensors = await FetchSensorConfigurationAsync(configUrl, stoppingToken);
+
+                    if (activeSensors.Count == 0)
+                    {
+                        _logger.LogWarning("No sensors configured or server unreachable. Waiting...");
+                        await Task.Delay(5000, stoppingToken);
+                        continue; // Skip generation until we have sensors
+                    }
+                }
+
+                // 2. Generate and send data for each sensor provided by the server
+                foreach (var sensor in activeSensors)
+                {
                     var reading = new SensorReading
                     {
-                        // Id is omitted; the server's database will generate it
-                        Temperature = Math.Round(_random.NextDouble() * (35.0 - 10.0) + 10.0, 1), // From 10.0 to 35.0 °C
-                        SoilHumidity = Math.Round(_random.NextDouble() * (80.0 - 30.0) + 30.0, 1), // From 30.0 to 80.0 %
-                        LightLevel = _random.Next(100, 1000), // From 100 to 1000 lux
+                        SensorId = sensor.Id, // Assign the specific ID from the server
+                        Temperature = Math.Round(_random.NextDouble() * (35.0 - 10.0) + 10.0, 1),
+                        SoilHumidity = Math.Round(_random.NextDouble() * (80.0 - 30.0) + 30.0, 1),
+                        LightLevel = _random.Next(100, 1000),
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    // Output to console to verify the program is running
-                    _logger.LogInformation("Generated: Temp: {Temp}°C, Humidity: {Hum}%", reading.Temperature, reading.SoilHumidity);
+                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%",
+                        sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity);
 
                     try
                     {
-                        // 2. Send data to the server. 
-                        // PostAsJsonAsync automatically serializes the 'reading' object to JSON
-
-                        // COMMENTED OUT UNTIL THE SERVER IS READY. 
-                        // When your teammate says the API is ready, just uncomment these lines:
-
-                        // var response = await _httpClient.PostAsJsonAsync(apiUrl, reading, stoppingToken);
+                        // 3. Send data to the server (Uncomment when API is ready)
+                        // var response = await _httpClient.PostAsJsonAsync(telemetryUrl, reading, stoppingToken);
                         // _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError("Failed to send data: {Message}", ex.Message);
+                        _logger.LogError("Failed to send data for sensor {Id}: {Message}", sensor.Id, ex.Message);
                     }
                 }
-                // 3. Wait for 5 seconds before the next generation
+
+                // 4. Wait for 5 seconds before the next generation cycle
                 await Task.Delay(5000, stoppingToken);
             }
+        }
+
+        // Helper method to fetch the sensor list from the API
+        private async Task<List<SensorConfig>> FetchSensorConfigurationAsync(string url, CancellationToken stoppingToken)
+        {
+            try
+            {
+                _logger.LogInformation("Requesting sensor configuration from {Url}...", url);
+
+                // Expecting the server to return a JSON array like: [{"id": 1, "name": "Greenhouse 1"}, ...]
+                var sensors = await _httpClient.GetFromJsonAsync<List<SensorConfig>>(url, stoppingToken);
+
+                if (sensors != null && sensors.Any())
+                {
+                    _logger.LogInformation("Successfully loaded {Count} sensors.", sensors.Count);
+                    return sensors;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to fetch sensor configuration: {Message}", ex.Message);
+            }
+
+            return new List<SensorConfig>(); // Return empty list on failure
         }   
     }
 }
