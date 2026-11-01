@@ -134,7 +134,6 @@ public partial class MainPage : ContentPage
                 .WithAutomaticReconnect()
                 .Build();
 
-           
             _hubConnection.Reconnecting += (error) =>
             {
                 MainThread.BeginInvokeOnMainThread(() =>
@@ -217,7 +216,6 @@ public partial class MainPage : ContentPage
 
             var history = await _httpClient.GetFromJsonAsync<List<SensorReading>>($"{BaseUrl}/api/microclimate");
 
-            
             if (history != null && history.Count > 0)
             {
                 foreach (var item in history) { item.CreatedAt = item.CreatedAt.ToLocalTime(); EnsureSensorExists(item.SensorId); }
@@ -232,7 +230,6 @@ public partial class MainPage : ContentPage
                 ConnectionStatusLabel.TextColor = Color.FromArgb("#D97706");
             }
 
-            SimSensorPicker.ItemsSource = _sensors;
             RebuildOverviewCards();
             ApplyFilters();
             UpdateCharts();
@@ -379,28 +376,42 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private void OnToggleSimulatorClicked(object sender, EventArgs e)
+   
+    private async void OnAddNewSensorClicked(object sender, EventArgs e)
     {
-        SimulatorPanel.IsVisible = !SimulatorPanel.IsVisible;
-        ToggleSimulatorBtn.Text = SimulatorPanel.IsVisible ? "Згорнути ▲" : "Розгорнути ▼";
-    }
+        var sensorName = NewSensorNameEntry.Text;
+        var apiKey = ApiKeyEntry.Text;
 
-    private void OnSimSliderChanged(object sender, ValueChangedEventArgs e)
-    {
-        if (SimTempValueLabel == null) return;
-        SimTempValueLabel.Text = $"{SimTempSlider.Value:F1} °C";
-        SimHumValueLabel.Text = $"{SimHumSlider.Value:F1} %";
-        SimLightValueLabel.Text = $"{(int)SimLightSlider.Value} lx";
-    }
+        if (string.IsNullOrWhiteSpace(sensorName) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            await DisplayAlert("Помилка", "Будь ласка, введіть назву об'єкта та ApiKey.", "ОК");
+            return;
+        }
 
-    private async void OnSendCustomReadingClicked(object sender, EventArgs e)
-    {
-        int targetSensorId = (SimSensorPicker.SelectedItem as SensorConfig)?.Id ?? 1;
-        var customReading = new SensorReading { SensorId = targetSensorId, Temperature = Math.Round(SimTempSlider.Value, 1), SoilHumidity = Math.Round(SimHumSlider.Value, 1), LightLevel = Math.Round(SimLightSlider.Value, 0), CreatedAt = DateTime.UtcNow };
+        var newSensor = new SensorConfig { Name = sensorName };
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/api/sensors");
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/api/microclimate") { Content = JsonContent.Create(customReading) };
-        if (!string.IsNullOrWhiteSpace(ApiKeyEntry.Text)) request.Headers.Add("X-Api-Key", ApiKeyEntry.Text.Trim());
-        await _httpClient.SendAsync(request);
+        request.Content = JsonContent.Create(newSensor);
+        request.Headers.Add("X-Api-Key", apiKey.Trim());
+
+        try
+        {
+            var response = await _httpClient.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                await DisplayAlert("Успіх", $"Об'єкт '{sensorName}' успішно додано!", "ОК");
+                NewSensorNameEntry.Text = string.Empty; 
+                await LoadEverythingAsync(); 
+            }
+            else
+            {
+                await DisplayAlert("Помилка", $"Не вдалося додати об'єкт (Статус: {response.StatusCode}). Перевірте правильність ApiKey.", "ОК");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Помилка з'єднання", ex.Message, "ОК");
+        }
     }
 
     private void OnReadingSelected(object sender, SelectionChangedEventArgs e) => ReadingsCollectionView.SelectedItem = null;

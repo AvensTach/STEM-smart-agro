@@ -4,15 +4,18 @@
     "Projects": [
       {
         "Path": "SmartAgro.Backend\\SmartAgro.Backend.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "http"
       },
       {
         "Path": "SmartAgro.IoT\\SmartAgro.IoT.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "SmartAgro.IoT"
       },
       {
         "Path": "SmartAgro.Frontend\\SmartAgro.Frontend.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "Windows Machine"
       }
     ]
   }
