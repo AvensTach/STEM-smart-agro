@@ -7,11 +7,11 @@
         "Action": "Start"
       },
       {
-        "Path": "SmartAgro.Frontend\\SmartAgro.Frontend.csproj",
+        "Path": "SmartAgro.IoT\\SmartAgro.IoT.csproj",
         "Action": "Start"
       },
       {
-        "Path": "SmartAgro.IoT\\SmartAgro.IoT.csproj",
+        "Path": "SmartAgro.Frontend\\SmartAgro.Frontend.csproj",
         "Action": "Start"
       }
     ]

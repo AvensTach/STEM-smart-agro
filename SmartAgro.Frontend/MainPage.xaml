@@ -1,13 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
              x:Class="SmartAgro.Frontend.MainPage"
              Title="SmartAgro Multi-Object Hub"
              BackgroundColor="#F0F4F1">
 
     <Grid RowDefinitions="Auto, *" Padding="16" RowSpacing="14">
 
-        <!-- ВЕРХНЯ ПАНЕЛЬ: Статус API + Статус SignalR -->
+        <!-- ВЕРХНЯ ПАНЕЛЬ -->
         <Border Grid.Row="0" BackgroundColor="White" StrokeShape="RoundRectangle 14" Stroke="Transparent" Padding="16,12">
             <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="12" VerticalOptions="Center">
                 <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="2">
@@ -18,26 +19,8 @@
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
 
-                <Button Grid.Column="1"
-                        x:Name="ShowAllObjectsBtn"
-                        Text="🌐 Всі об'єкти"
-                        Clicked="OnShowAllObjectsClicked"
-                        BackgroundColor="#1B4332"
-                        TextColor="White"
-                        FontAttributes="Bold"
-                        CornerRadius="10"
-                        HeightRequest="40"
-                        Padding="14,0"/>
-
-                <Button Grid.Column="2"
-                        Text="🔄 Оновити все"
-                        Clicked="OnRefreshClicked"
-                        BackgroundColor="#E8F5E9"
-                        TextColor="#2D6A4F"
-                        FontAttributes="Bold"
-                        CornerRadius="10"
-                        HeightRequest="40"
-                        Padding="14,0"/>
+                <Button Grid.Column="1" x:Name="ShowAllObjectsBtn" Text="🌐 Всі об'єкти" Clicked="OnShowAllObjectsClicked" BackgroundColor="#1B4332" TextColor="White" FontAttributes="Bold" CornerRadius="10" HeightRequest="40" Padding="14,0"/>
+                <Button Grid.Column="2" Text="🔄 Оновити все" Clicked="OnRefreshClicked" BackgroundColor="#E8F5E9" TextColor="#2D6A4F" FontAttributes="Bold" CornerRadius="10" HeightRequest="40" Padding="14,0"/>
             </Grid>
         </Border>
 
@@ -45,31 +28,21 @@
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Spacing="16">
 
-                <!-- 1. КАРТКИ ОБ'ЄКТІВ (ГОРИЗОНТАЛЬНИЙ АБО СІТКОВИЙ ОГЛЯД УСІХ ДАТЧИКІВ) -->
+                <!-- 1. КАРТКИ ОБ'ЄКТІВ -->
                 <VerticalStackLayout Spacing="6">
                     <Grid ColumnDefinitions="*, Auto">
                         <Label Grid.Column="0" Text="🏢 Активні об'єкти (натисни на картку для фільтрації)" FontSize="16" FontAttributes="Bold" TextColor="#1B4332"/>
                         <Label Grid.Column="1" x:Name="SelectedObjectBannerLabel" Text="Обрано: Всі об'єкти" FontSize="13" FontAttributes="Bold" TextColor="#2D6A4F"/>
                     </Grid>
 
-                    <CollectionView x:Name="SensorsOverviewCollection"
-                                    SelectionMode="Single"
-                                    SelectionChanged="OnSensorCardSelected"
-                                    HeightRequest="155"
-                                    EmptyView="Об'єкти ще не завантажені (перевірте GET /api/sensors).">
+                    <CollectionView x:Name="SensorsOverviewCollection" SelectionMode="Single" SelectionChanged="OnSensorCardSelected" HeightRequest="155" EmptyView="Об'єкти ще не завантажені (перевірте GET /api/sensors).">
                         <CollectionView.ItemsLayout>
                             <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12"/>
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border WidthRequest="250"
-                                        BackgroundColor="{Binding CardBackground}"
-                                        StrokeShape="RoundRectangle 14"
-                                        Stroke="{Binding CardBorder}"
-                                        StrokeThickness="2"
-                                        Padding="14">
+                                <Border WidthRequest="250" BackgroundColor="{Binding CardBackground}" StrokeShape="RoundRectangle 14" Stroke="{Binding CardBorder}" StrokeThickness="2" Padding="14">
                                     <VerticalStackLayout Spacing="8">
-                                        <!-- Заголовок картки об'єкта -->
                                         <Grid ColumnDefinitions="*, Auto">
                                             <VerticalStackLayout Grid.Column="0">
                                                 <Label Text="{Binding SensorName}" FontSize="16" FontAttributes="Bold" TextColor="#1B4332" LineBreakMode="TailTruncation"/>
@@ -82,7 +55,6 @@
 
                                         <BoxView HeightRequest="1" Color="#E9ECEF"/>
 
-                                        <!-- Останні показники цього конкретного об'єкта -->
                                         <Grid ColumnDefinitions="*, *, *" ColumnSpacing="4">
                                             <VerticalStackLayout Grid.Column="0">
                                                 <Label Text="Темп." FontSize="10" TextColor="#6C757D"/>
@@ -106,7 +78,7 @@
                     </CollectionView>
                 </VerticalStackLayout>
 
-                <!-- 2. ІНТЕРАКТИВНИЙ ТЕСТЕР-СИМУЛЯТОР З ВИБОРОМ ОБ'ЄКТА ТА API KEY -->
+                <!-- 2. ІНТЕРАКТИВНИЙ ТЕСТЕР-СИМУЛЯТОР -->
                 <Border BackgroundColor="White" StrokeShape="RoundRectangle 14" Stroke="#E9ECEF" Padding="14">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
@@ -114,35 +86,23 @@
                                 <Label Text="🎛️ Ручна відправка показників на конкретний об'єкт (POST + ApiKey)" FontSize="15" FontAttributes="Bold" TextColor="#1B4332"/>
                                 <Label Text="Зміни показники та відправ їх через захищений ендпоінт — SignalR миттєво оновить картку" FontSize="12" TextColor="#6C757D"/>
                             </VerticalStackLayout>
-                            <Button Grid.Column="1"
-                                    x:Name="ToggleSimulatorBtn"
-                                    Text="Розгорнути ▼"
-                                    Clicked="OnToggleSimulatorClicked"
-                                    BackgroundColor="#E8F5E9"
-                                    TextColor="#2D6A4F"
-                                    FontSize="12"
-                                    FontAttributes="Bold"
-                                    CornerRadius="8"
-                                    HeightRequest="34"/>
+                            <Button Grid.Column="1" x:Name="ToggleSimulatorBtn" Text="Розгорнути ▼" Clicked="OnToggleSimulatorClicked" BackgroundColor="#E8F5E9" TextColor="#2D6A4F" FontSize="12" FontAttributes="Bold" CornerRadius="8" HeightRequest="34"/>
                         </Grid>
 
                         <VerticalStackLayout x:Name="SimulatorPanel" IsVisible="False" Spacing="10" Padding="0,8,0,0">
                             <BoxView HeightRequest="1" Color="#E9ECEF"/>
 
-                            <!-- Вибір об'єкта та введення X-Api-Key -->
                             <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
                                 <VerticalStackLayout Grid.Column="0" Spacing="4">
                                     <Label Text="Обери об'єкт (Sensor):" FontSize="12" FontAttributes="Bold" TextColor="#495057"/>
                                     <Picker x:Name="SimSensorPicker" Title="Оберіть об'єкт..." ItemDisplayBinding="{Binding Name}" BackgroundColor="#F8F9FA"/>
                                 </VerticalStackLayout>
-
                                 <VerticalStackLayout Grid.Column="1" Spacing="4">
                                     <Label Text="X-Api-Key (з твоїх User Secrets / appsettings):" FontSize="12" FontAttributes="Bold" TextColor="#495057"/>
                                     <Entry x:Name="ApiKeyEntry" Placeholder="Введи свій ApiKey для POST..." BackgroundColor="#F8F9FA"/>
                                 </VerticalStackLayout>
                             </Grid>
 
-                            <!-- Слайдери -->
                             <Grid ColumnDefinitions="150, *, 75" VerticalOptions="Center">
                                 <Label Grid.Column="0" Text="🌡️ Температура:" VerticalOptions="Center" FontSize="13"/>
                                 <Slider Grid.Column="1" x:Name="SimTempSlider" Minimum="5" Maximum="45" Value="24" MinimumTrackColor="#E63946" ValueChanged="OnSimSliderChanged"/>
@@ -161,18 +121,34 @@
                                 <Label Grid.Column="2" x:Name="SimLightValueLabel" Text="500 lx" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
                             </Grid>
 
-                            <Button Text="🚀 Надіслати телеметрію на обраний об'єкт"
-                                    Clicked="OnSendCustomReadingClicked"
-                                    BackgroundColor="#1B4332"
-                                    TextColor="White"
-                                    FontAttributes="Bold"
-                                    CornerRadius="10"
-                                    HeightRequest="42"/>
+                            <Button Text="🚀 Надіслати телеметрію на обраний об'єкт" Clicked="OnSendCustomReadingClicked" BackgroundColor="#1B4332" TextColor="White" FontAttributes="Bold" CornerRadius="10" HeightRequest="42"/>
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- 3. ІСТОРІЯ ПОКАЗНИКІВ З ФІЛЬТРАМИ ЗА ОБ'ЄКТОМ ТА КРИТИЧНІСТЮ -->
+                <!-- 3. ПАНЕЛЬ ГРАФІКІВ (Відображається тільки якщо обрано 1 об'єкт) -->
+                <VerticalStackLayout x:Name="ChartsPanel" IsVisible="False" Spacing="8">
+                    <Label Text="📈 Динаміка показників" FontSize="16" FontAttributes="Bold" TextColor="#1B4332"/>
+                    <Grid ColumnDefinitions="*, *" HeightRequest="210" ColumnSpacing="12">
+                        <!-- Графік Температури -->
+                        <Border Grid.Column="0" BackgroundColor="White" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="8">
+                            <VerticalStackLayout>
+                                <Label Text="Температура (°C)" FontSize="12" FontAttributes="Bold" TextColor="#6C757D" HorizontalOptions="Center"/>
+                                <lvc:CartesianChart Series="{Binding TempSeries}" XAxes="{Binding XAxes}" HeightRequest="160"/>
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <!-- Графік Вологості -->
+                        <Border Grid.Column="1" BackgroundColor="White" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="8">
+                            <VerticalStackLayout>
+                                <Label Text="Вологість ґрунту (%)" FontSize="12" FontAttributes="Bold" TextColor="#6C757D" HorizontalOptions="Center"/>
+                                <lvc:CartesianChart Series="{Binding HumSeries}" XAxes="{Binding XAxes}" HeightRequest="160"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+                </VerticalStackLayout>
+
+                <!-- 4. ІСТОРІЯ ПОКАЗНИКІВ З ФІЛЬТРАМИ ЗА ОБ'ЄКТОМ ТА КРИТИЧНІСТЮ -->
                 <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
                     <VerticalStackLayout Grid.Column="0">
                         <Label x:Name="HistoryHeaderLabel" Text="📋 Історія телеметрії (Всі об'єкти)" FontSize="17" FontAttributes="Bold" TextColor="#1B4332"/>
@@ -186,11 +162,7 @@
                     </HorizontalStackLayout>
                 </Grid>
 
-                <CollectionView x:Name="ReadingsCollectionView"
-                                SelectionMode="Single"
-                                SelectionChanged="OnReadingSelected"
-                                HeightRequest="360"
-                                EmptyView="Немає записів для обраного об'єкта або фільтра.">
+                <CollectionView x:Name="ReadingsCollectionView" SelectionMode="Single" SelectionChanged="OnReadingSelected" HeightRequest="360" EmptyView="Немає записів для обраного об'єкта або фільтра.">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
                     </CollectionView.ItemsLayout>
@@ -198,12 +170,10 @@
                         <DataTemplate>
                             <Border BackgroundColor="White" StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" Padding="14,10">
                                 <Grid ColumnDefinitions="140, 95, *, *, *, Auto" VerticalOptions="Center">
-                                    <!-- Назва об'єкта -->
                                     <Border Grid.Column="0" BackgroundColor="#E8F5E9" StrokeShape="RoundRectangle 6" Stroke="Transparent" Padding="8,4" HorizontalOptions="Start" VerticalOptions="Center">
                                         <Label Text="{Binding SensorName}" FontSize="12" FontAttributes="Bold" TextColor="#1B4332" LineBreakMode="TailTruncation"/>
                                     </Border>
 
-                                    <!-- Час -->
                                     <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
                                         <Label Text="{Binding CreatedAt, StringFormat='{0:HH:mm:ss}'}" FontAttributes="Bold" FontSize="14" TextColor="#212529"/>
                                         <Label Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}" FontSize="11" TextColor="#868E96"/>
