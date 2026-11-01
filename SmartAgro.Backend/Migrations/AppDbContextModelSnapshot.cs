@@ -67,6 +67,10 @@ namespace SmartAgro.Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("SensorId");
+
                     b.ToTable("SensorReadings");
                 });
 
@@ -92,6 +96,8 @@ namespace SmartAgro.Backend.Migrations
                         .HasColumnType("REAL");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
 
                     b.ToTable("SensorReadingsHistory");
                 });

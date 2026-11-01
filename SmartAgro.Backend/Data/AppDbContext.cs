@@ -17,6 +17,16 @@ namespace SmartAgro.Backend.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Optimize temporal and relational queries
+            modelBuilder.Entity<SensorReading>()
+                .HasIndex(r => r.CreatedAt);
+
+            modelBuilder.Entity<SensorReading>()
+                .HasIndex(r => r.SensorId);
+
+            modelBuilder.Entity<SensorReadingHistory>()
+                .HasIndex(h => h.CreatedAt);
+
             modelBuilder.Entity<SensorConfig>().HasData(
                 new SensorConfig { Id = 1, Name = "Теплиця 1 (Томати)" },
                 new SensorConfig { Id = 2, Name = "Поле 3 (Пшениця)" }
