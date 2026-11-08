@@ -41,5 +41,25 @@ namespace SmartAgro.Backend.Controllers
 
             return Ok(sensors);
         }
+
+        // POST: api/sensors
+        [HttpPost]
+        public async Task<ActionResult<SensorConfig>> AddSensor([FromBody] SensorConfig sensor)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // Security check: Force the new sensor to belong to the authenticated user.
+            // This prevents a malicious user from passing someone else's UserId in the JSON body.
+            sensor.UserId = GetCurrentUserId();
+
+            _context.Sensors.Add(sensor);
+            await _context.SaveChangesAsync();
+
+            // Return 201 Created with the newly generated sensor data (including its new database ID)
+            return CreatedAtAction(nameof(GetSensors), new { id = sensor.Id }, sensor);
+        }
     }
 }
