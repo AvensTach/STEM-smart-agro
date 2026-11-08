@@ -118,5 +118,38 @@ namespace SmartAgro.IoT
 
             return new List<SensorConfig>(); // Return empty list on failure
         }
+        private async Task SendReadingWithRetryAsync(string url, SensorReading reading, CancellationToken stoppingToken)
+        {
+            int maxRetries = 3;
+            int delayMs = 1000;
+
+            for (int retry = 1; retry <= maxRetries; retry++)
+            {
+                try
+                {
+                    var response = await _httpClient.PostAsJsonAsync(url, reading, stoppingToken);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation("Sensor {SensorId} - Data sent successfully.", reading.SensorId);
+                        return;
+                    }
+
+                    _logger.LogWarning("Sensor {SensorId} - Attempt {Retry} failed with status: {Status}",
+                        reading.SensorId, retry, response.StatusCode);
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError("Sensor {SensorId} - Network error on attempt {Retry}: {Message}",
+                        reading.SensorId, retry, ex.Message);
+                }
+
+                if (retry < maxRetries)
+                {
+                    await Task.Delay(delayMs * retry, stoppingToken); // Exponential pause (1s, 2s, 3s)
+                }
+            }
+
+            _logger.LogError("Sensor {SensorId} - Failed to send telemetry after {Max} attempts.", reading.SensorId, maxRetries);
+        }
     }
 }
