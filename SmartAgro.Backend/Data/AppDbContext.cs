@@ -29,12 +29,11 @@ namespace SmartAgro.Backend.Data
             modelBuilder.Entity<SensorReadingHistory>()
                 .HasIndex(h => h.CreatedAt);
 
-            // Configure One-to-Many relationship between User and SensorConfig
-            modelBuilder.Entity<SensorConfig>()
-                .HasOne(s => s.User)
-                .WithMany(u => u.Sensors)
-                .HasForeignKey(s => s.UserId)
-                .OnDelete(DeleteBehavior.Cascade); // Deleting a user deletes their sensors
+            modelBuilder.Entity<User>()
+            .HasMany(u => u.Sensors)
+            .WithOne() // Leave this empty since SensorConfig no longer has the User property
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade); 
 
             // Seed a default admin user to own the initial sensors
             modelBuilder.Entity<User>().HasData(

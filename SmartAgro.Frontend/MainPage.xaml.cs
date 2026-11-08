@@ -97,15 +97,27 @@ public partial class MainPage : ContentPage
         {
             new Axis
             {
-                Labeler = value => new DateTime((long)value).ToString("HH:mm:ss"),
+                
+                Labeler = value =>
+                {
+                    if (double.IsNaN(value)) return "";
+                    try
+                    {
+                        return new DateTime((long)value).ToString("HH:mm:ss");
+                    }
+                    catch
+                    {
+                        return "";
+                    }
+                },
                 LabelsRotation = 45,
                 TextSize = 10
             }
         };
 
-        BindingContext = this;
-        SensorsOverviewCollection.ItemsSource = SensorCards;
-        ReadingsCollectionView.ItemsSource = DisplayedReadings;
+        //BindingContext = this;
+        //SensorsOverviewCollection.ItemsSource = SensorCards;
+        //ReadingsCollectionView.ItemsSource = DisplayedReadings;
 
         var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (m, c, ch, e) => true };
         _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
@@ -114,6 +126,14 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await Task.Delay(100);
+
+        
+        BindingContext = this;
+        SensorsOverviewCollection.ItemsSource = SensorCards;
+        ReadingsCollectionView.ItemsSource = DisplayedReadings;
+
+       
         await LoadEverythingAsync();
         await ConnectSignalRAsync();
     }
@@ -214,45 +234,55 @@ public partial class MainPage : ContentPage
         try
         {
             var token = await SecureStorage.Default.GetAsync("jwt_token");
+
             if (string.IsNullOrEmpty(token))
             {
-                await Shell.Current.GoToAsync("//LoginPage");
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    try { await Shell.Current.GoToAsync("//LoginPage"); } catch { }
+                });
                 return;
             }
 
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            try
-            {
-                var configs = await _httpClient.GetFromJsonAsync<List<SensorConfig>>($"{BaseUrl}/api/sensors");
-                if (configs != null) _sensors = configs;
-            }
-            catch { }
+            // Отримуємо дані у фоні, щоб не блокувати UI
+            List<SensorConfig> configs = null;
+            try { configs = await _httpClient.GetFromJsonAsync<List<SensorConfig>>($"{BaseUrl}/api/sensors"); } catch { }
 
             var history = await _httpClient.GetFromJsonAsync<List<SensorReading>>($"{BaseUrl}/api/microclimate");
 
-            if (history != null && history.Count > 0)
+            // ПРИМУСОВО ОНОВЛЮЄМО ІНТЕРФЕЙС ТІЛЬКИ З ГОЛОВНОГО ПОТОКУ
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                foreach (var item in history) { item.CreatedAt = item.CreatedAt.ToLocalTime(); EnsureSensorExists(item.SensorId); }
-                _allReadings = history;
-                ConnectionStatusLabel.Text = $"Онлайн • Об'єктів: {_sensors.Count} • Записів: {_allReadings.Count}";
-                ConnectionStatusLabel.TextColor = Color.FromArgb("#2D6A4F");
-            }
-            else
-            {
-                _allReadings.Clear();
-                ConnectionStatusLabel.Text = "Очікування перших даних від датчиків...";
-                ConnectionStatusLabel.TextColor = Color.FromArgb("#D97706");
-            }
+                if (configs != null) _sensors = configs;
 
-            RebuildOverviewCards();
-            ApplyFilters();
-            UpdateCharts();
+                if (history != null && history.Count > 0)
+                {
+                    foreach (var item in history) { item.CreatedAt = item.CreatedAt.ToLocalTime(); EnsureSensorExists(item.SensorId); }
+                    _allReadings = history;
+                    ConnectionStatusLabel.Text = $"Онлайн • Об'єктів: {_sensors.Count} • Записів: {_allReadings.Count}";
+                    ConnectionStatusLabel.TextColor = Color.FromArgb("#2D6A4F");
+                }
+                else
+                {
+                    _allReadings.Clear();
+                    ConnectionStatusLabel.Text = "Очікування перших даних від датчиків...";
+                    ConnectionStatusLabel.TextColor = Color.FromArgb("#D97706");
+                }
+
+                RebuildOverviewCards();
+                ApplyFilters();
+                UpdateCharts();
+            });
         }
         catch (Exception ex)
         {
-            ConnectionStatusLabel.Text = $"Помилка: {ex.Message}";
-            ConnectionStatusLabel.TextColor = Color.FromArgb("#E63946");
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                ConnectionStatusLabel.Text = $"Помилка: {ex.Message}";
+                ConnectionStatusLabel.TextColor = Color.FromArgb("#E63946");
+            });
         }
         finally
         {
@@ -405,14 +435,13 @@ public partial class MainPage : ContentPage
 
         try
         {
-          
             var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/sensors", newSensor);
 
             if (response.IsSuccessStatusCode)
             {
                 await DisplayAlert("Успіх", $"Об'єкт '{sensorName}' успішно додано!", "ОК");
                 NewSensorNameEntry.Text = string.Empty;
-                await LoadEverythingAsync(); 
+                await LoadEverythingAsync();
             }
             else
             {
@@ -426,7 +455,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // Logout
     private async void OnLogoutClicked(object sender, EventArgs e)
     {
         SecureStorage.Default.Remove("jwt_token");

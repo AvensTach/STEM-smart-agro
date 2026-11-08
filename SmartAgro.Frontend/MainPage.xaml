@@ -32,7 +32,7 @@
                         <Label Grid.Column="1" x:Name="SelectedObjectBannerLabel" Text="Обрано: Всі об'єкти" FontSize="13" FontAttributes="Bold" TextColor="#2D6A4F"/>
                     </Grid>
 
-                    <CollectionView x:Name="SensorsOverviewCollection" SelectionMode="Single" SelectionChanged="OnSensorCardSelected" HeightRequest="155" EmptyView="Об'єкти ще не завантажені (перевірте GET /api/sensors).">
+                    <CollectionView x:Name="SensorsOverviewCollection" SelectionMode="Single" SelectionChanged="OnSensorCardSelected" HeightRequest="155">
                         <CollectionView.ItemsLayout>
                             <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12"/>
                         </CollectionView.ItemsLayout>
@@ -75,7 +75,7 @@
                     </CollectionView>
                 </VerticalStackLayout>
 
-                <!-- Блок додавання нового об'єкта (виправлено дублювання) -->
+                
                 <Border BackgroundColor="White" StrokeShape="RoundRectangle 14" Stroke="#E9ECEF" Padding="14">
                     <VerticalStackLayout Spacing="12">
                         <VerticalStackLayout>
@@ -87,7 +87,7 @@
 
                         <VerticalStackLayout Spacing="4">
                             <Label Text="Назва об'єкта:" FontSize="12" FontAttributes="Bold" TextColor="#495057"/>
-                            <Entry x:Name="NewSensorNameEntry" Placeholder="Напр. Теплиця 2..." BackgroundColor="#F8F9FA"/>
+                            <Entry x:Name="NewSensorNameEntry" Placeholder="Напр. Теплиця 2..." BackgroundColor="#F8F9FA" TextColor="#495057"/>
                         </VerticalStackLayout>
 
                         <Button Text="Додати об'єкт" Clicked="OnAddNewSensorClicked" BackgroundColor="#1B4332" TextColor="White" FontAttributes="Bold" CornerRadius="10" HeightRequest="42"/>
@@ -128,7 +128,7 @@
                     </HorizontalStackLayout>
                 </Grid>
 
-                <CollectionView x:Name="ReadingsCollectionView" SelectionMode="Single" SelectionChanged="OnReadingSelected" HeightRequest="360" EmptyView="Немає записів для обраного об'єкта або фільтра.">
+                <CollectionView x:Name="ReadingsCollectionView" SelectionMode="Single" SelectionChanged="OnReadingSelected" HeightRequest="360">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
                     </CollectionView.ItemsLayout>

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace SmartAgro.Shared
 {
@@ -10,6 +11,7 @@ namespace SmartAgro.Shared
         public string Name { get; set; }
 
         public int UserId { get; set; }
-        public User User { get; set; }
+
+    
     }
 }
