@@ -72,8 +72,31 @@ namespace SmartAgro.IoT
                 using var authClient = new HttpClient();
                 var loginPayload = new LoginRequest { Username = username!, Password = password! };
 
+                // 1. Attempt standard login
                 var response = await authClient.PostAsJsonAsync($"{baseUrl}/api/auth/login", loginPayload, cancellationToken);
 
+                // 2. If login fails (user doesn't exist), attempt auto-registration
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Login failed. Attempting auto-registration for IoT worker...");
+
+                    var registerResponse = await authClient.PostAsJsonAsync($"{baseUrl}/api/auth/register", loginPayload, cancellationToken);
+
+                    if (registerResponse.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation("IoT worker successfully registered. Retrying login...");
+
+                        // Retry login now that the account exists
+                        response = await authClient.PostAsJsonAsync($"{baseUrl}/api/auth/login", loginPayload, cancellationToken);
+                    }
+                    else
+                    {
+                        _logger.LogError("Auto-registration failed with status code: {Status}", registerResponse.StatusCode);
+                        // If registration fails, the next block will catch the failure and log it
+                    }
+                }
+
+                // 3. Process the final login result
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: cancellationToken);
