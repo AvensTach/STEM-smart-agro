@@ -3,6 +3,7 @@ using Serilog;
 using SmartAgro.Shared;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -11,9 +12,8 @@ namespace SmartAgro.IoT
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly Random _random;
-        private readonly IConfiguration _configuration;
 
         // Constants for Boundary Checks
         private const double MinTemperature = -40.0;
@@ -22,41 +22,34 @@ namespace SmartAgro.IoT
         private const double MaxHumidity = 100.0;
         private const int MinLightLevel = 0;
 
-        public Worker(ILogger<Worker> logger, IConfiguration configuration)
+        // Updating the constructor: accepting IHttpClientFactory instead of IConfiguration
+        public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _configuration = configuration;
-            _httpClient = new HttpClient();
+            _httpClientFactory = httpClientFactory;
             _random = new Random();
-
-            var apiKey = _configuration["ApiKey"];
-            if (!string.IsNullOrEmpty(apiKey))
-            {
-                _httpClient.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
-            }
-            else
-            {
-                _logger.LogWarning("API Key is missing in User Secrets!");
-            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Update these URLs to match your actual backend routing
-            string configUrl = "http://localhost:5297/api/sensors";
-            string telemetryUrl = "http://localhost:5297/api/microclimate";
+            // obtain a named client "IotClient" (it automatically adds a Bearer Token and handles 401s)
+            var httpClient = _httpClientFactory.CreateClient("IotClient");
+
+            // Relative paths (since BaseAddress="http://localhost:5297" is already specified in Program.cs)
+            string configUrl = "/api/sensors";
+            string telemetryUrl = "/api/microclimate";
 
             List<SensorConfig> activeSensors = new List<SensorConfig>();
 
             DateTime lastConfigFetch = DateTime.MinValue;
-            TimeSpan configRefreshInterval = TimeSpan.FromSeconds(60); // Update frequency (every 60 sec)
+            TimeSpan configRefreshInterval = TimeSpan.FromSeconds(60);
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 // Sensor configuration update
                 if (activeSensors.Count == 0 || DateTime.UtcNow - lastConfigFetch > configRefreshInterval)
                 {
-                    var refreshedSensors = await FetchSensorConfigurationAsync(configUrl, stoppingToken);
+                    var refreshedSensors = await FetchSensorConfigurationAsync(httpClient, configUrl, stoppingToken);
 
                     if (refreshedSensors.Count > 0)
                     {
@@ -80,7 +73,7 @@ namespace SmartAgro.IoT
                 {
                     var reading = GenerateReading(sensor.Id);
 
-                    // 2. Boundary Checks
+                    // Boundary Checks
                     if (!ValidateSensorReading(reading, sensor.Name))
                     {
                         continue; // Skipping invalid data
@@ -89,8 +82,8 @@ namespace SmartAgro.IoT
                     _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%, Light: {Light}",
                         sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity, reading.LightLevel);
 
-                    // 3. Network Fault Tolerance
-                    await SendTelemetryAsync(telemetryUrl, reading, sensor.Id, stoppingToken);
+                    // Network Fault Tolerance
+                    await SendTelemetryAsync(httpClient, telemetryUrl, reading, sensor.Id, stoppingToken);
                 }
 
                 await Task.Delay(60000, stoppingToken);
@@ -109,9 +102,6 @@ namespace SmartAgro.IoT
             };
         }
 
-        /// <summary>
-        /// Checks whether sensor readings fall within permissible limits.
-        /// </summary>
         private bool ValidateSensorReading(SensorReading reading, string sensorName)
         {
             if (reading.Temperature < MinTemperature || reading.Temperature > MaxTemperature)
@@ -138,14 +128,11 @@ namespace SmartAgro.IoT
             return true;
         }
 
-        /// <summary>
-        /// Sending telemetry with graceful handling of network errors.
-        /// </summary>
-        private async Task SendTelemetryAsync(string url, SensorReading reading, int sensorId, CancellationToken stoppingToken)
+        private async Task SendTelemetryAsync(HttpClient httpClient, string url, SensorReading reading, int sensorId, CancellationToken stoppingToken)
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(url, reading, stoppingToken);
+                var response = await httpClient.PostAsJsonAsync(url, reading, stoppingToken);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -159,7 +146,6 @@ namespace SmartAgro.IoT
             }
             catch (HttpRequestException ex)
             {
-                // Backend offline — logging a Warning without a stack trace
                 _logger.LogWarning("Backend offline or unreachable for sensor {Id}: {Message}", sensorId, ex.Message);
             }
             catch (TaskCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -172,21 +158,17 @@ namespace SmartAgro.IoT
             }
             catch (Exception ex)
             {
-                // Unexpected error — log as Error with details
                 _logger.LogError(ex, "Unexpected error sending telemetry for sensor {Id}", sensorId);
             }
         }
 
-        /// <summary>
-        /// Requesting sensor configuration with graceful handling of network errors.
-        /// </summary>
-        private async Task<List<SensorConfig>> FetchSensorConfigurationAsync(string url, CancellationToken stoppingToken)
+        private async Task<List<SensorConfig>> FetchSensorConfigurationAsync(HttpClient httpClient, string url, CancellationToken stoppingToken)
         {
             try
             {
                 _logger.LogInformation("Requesting sensor configuration from {Url}...", url);
 
-                var sensors = await _httpClient.GetFromJsonAsync<List<SensorConfig>>(url, stoppingToken);
+                var sensors = await httpClient.GetFromJsonAsync<List<SensorConfig>>(url, stoppingToken);
 
                 if (sensors != null && sensors.Any())
                 {
