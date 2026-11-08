@@ -724,6 +724,9 @@ obj/
 /SmartAgro.Backend/smartagro.db-wal
 /SmartAgro.Backend/smartagro.db-shm
 /coveragereport
+<<<<<<< HEAD
+=======
 *.db
 *.db-shm
 *.db-wal
+>>>>>>> feature/issue-23-api-safety
