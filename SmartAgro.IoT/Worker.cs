@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+ï»¿using Microsoft.Extensions.Configuration;
 using Serilog;
 using SmartAgro.Shared;
 using System.Diagnostics;
@@ -79,7 +79,7 @@ namespace SmartAgro.IoT
                         continue; // Skipping invalid data
                     }
 
-                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%, Light: {Light}",
+                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}Â°C, Humidity: {Hum}%, Light: {Light}",
                         sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity, reading.LightLevel);
 
                     // Network Fault Tolerance
@@ -102,11 +102,11 @@ namespace SmartAgro.IoT
             };
         }
 
-        private bool ValidateSensorReading(SensorReading reading, string sensorName)
+        internal bool ValidateSensorReading(SensorReading reading, string sensorName)
         {
             if (reading.Temperature < MinTemperature || reading.Temperature > MaxTemperature)
             {
-                _logger.LogWarning("Boundary check failed for '{Name}' (ID:{Id}): Temperature {Temp}°C out of range [{Min}, {Max}]",
+                _logger.LogWarning("Boundary check failed for '{Name}' (ID:{Id}): Temperature {Temp}Â°C out of range [{Min}, {Max}]",
                     sensorName, reading.SensorId, reading.Temperature, MinTemperature, MaxTemperature);
                 return false;
             }
@@ -128,7 +128,7 @@ namespace SmartAgro.IoT
             return true;
         }
 
-        private async Task SendTelemetryAsync(HttpClient httpClient, string url, SensorReading reading, int sensorId, CancellationToken stoppingToken)
+        internal async Task SendTelemetryAsync(HttpClient httpClient, string url, SensorReading reading, int sensorId, CancellationToken stoppingToken)
         {
             try
             {
@@ -162,7 +162,7 @@ namespace SmartAgro.IoT
             }
         }
 
-        private async Task<List<SensorConfig>> FetchSensorConfigurationAsync(HttpClient httpClient, string url, CancellationToken stoppingToken)
+        internal async Task<List<SensorConfig>> FetchSensorConfigurationAsync(HttpClient httpClient, string url, CancellationToken stoppingToken)
         {
             try
             {
