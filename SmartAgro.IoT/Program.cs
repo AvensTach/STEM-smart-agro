@@ -3,19 +3,25 @@ using SmartAgro.IoT;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// Settings Serilog
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .WriteTo.Console()
-    .WriteTo.File(
-        path: "logs/smartagro-worker-.log",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 7,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
-    )
+    .WriteTo.File("logs/iot-worker-.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
-builder.Services.AddSerilog();
-builder.Services.AddHttpClient<Worker>();
+builder.Logging.ClearProviders();
+builder.Logging.AddSerilog();
+
+// Registration of Auth Handler and HttpClient
+builder.Services.AddTransient<JwtAuthenticationHandler>();
+
+builder.Services.AddHttpClient("IotClient", (sp, client) =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    client.BaseAddress = new Uri(config["IotSettings:BaseUrl"] ?? "http://localhost:5000");
+}).AddHttpMessageHandler<JwtAuthenticationHandler>();
+
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
