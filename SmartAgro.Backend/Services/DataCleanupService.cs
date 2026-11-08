@@ -25,15 +25,23 @@ namespace SmartAgro.Backend.Services
 
                     var cutoffDate = DateTime.UtcNow.AddDays(-7);
 
-                    var deletedCount = await context.SensorReadings
+                    // 1. Fetch records first to avoid SQLite SQL translation errors with dates
+                    var oldRecords = await context.SensorReadings
                         .Where(r => r.CreatedAt < cutoffDate)
-                        .ExecuteDeleteAsync(stoppingToken);
+                        .ToListAsync(stoppingToken);
 
-                    _logger.LogInformation("Очищення бази: видалено {Count} старих записів.", deletedCount);
+                    // 2. Remove using standard change tracking
+                    if (oldRecords.Any())
+                    {
+                        context.SensorReadings.RemoveRange(oldRecords);
+                        await context.SaveChangesAsync(stoppingToken);
+
+                        _logger.LogInformation("Database cleanup: removed {Count} old records.", oldRecords.Count);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("Помилка під час очищення бази даних: {Message}", ex.Message);
+                    _logger.LogError("Error during database cleanup: {Message}", ex.Message);
                 }
 
                 await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
