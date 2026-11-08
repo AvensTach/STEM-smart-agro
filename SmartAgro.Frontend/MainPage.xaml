@@ -148,7 +148,7 @@
 
                                     <Label Grid.Column="2" Text="{Binding Temperature, StringFormat=' {0:F1} °C'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#1B4332"/>
                                     <Label Grid.Column="3" Text="{Binding SoilHumidity, StringFormat=' {0:F1} %'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#0077B6"/>
-                                    <Label Grid.Column="4" Text="{Binding LightLevel, StringFormat='☀ {0:F0} lx'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#D97706"/>
+                                    <Label Grid.Column="4" Text="{Binding LightLevel, StringFormat=' {0:F0} lx'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#D97706"/>
 
                                     <Label Grid.Column="5" Text="Деталі ❯" VerticalOptions="Center" FontSize="12" TextColor="#ADB5BD"/>
                                 </Grid>
