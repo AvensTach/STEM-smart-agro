@@ -730,3 +730,10 @@ obj/
 *.db-shm
 *.db-wal
 >>>>>>> feature/issue-23-api-safety
+
+
+/SmartAgro.Backend/smartagro.db
+
+
+/SmartAgro.Backend/smartagro.db
+/SmartAgro.Backend/smartagro.db
