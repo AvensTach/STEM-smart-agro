@@ -19,11 +19,11 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+    - name: Restore test project
+      run: dotnet restore SmartAgro.Tests/SmartAgro.Tests.csproj
 
-    - name: Build solution
-      run: dotnet build --no-restore --configuration Release
+    - name: Build test project
+      run: dotnet build SmartAgro.Tests/SmartAgro.Tests.csproj --no-restore --configuration Release
 
     - name: Run unit tests
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: dotnet test SmartAgro.Tests/SmartAgro.Tests.csproj --no-build --configuration Release --verbosity normal
