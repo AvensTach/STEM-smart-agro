@@ -1,6 +1,10 @@
 using Microsoft.Extensions.Configuration;
+using Serilog;
 using SmartAgro.Shared;
+using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SmartAgro.IoT
 {
@@ -10,6 +14,13 @@ namespace SmartAgro.IoT
         private readonly HttpClient _httpClient;
         private readonly Random _random;
         private readonly IConfiguration _configuration;
+
+        // Constants for Boundary Checks
+        private const double MinTemperature = -40.0;
+        private const double MaxTemperature = 80.0;
+        private const double MinHumidity = 0.0;
+        private const double MaxHumidity = 100.0;
+        private const int MinLightLevel = 0;
 
         public Worker(ILogger<Worker> logger, IConfiguration configuration)
         {
@@ -42,7 +53,7 @@ namespace SmartAgro.IoT
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                // 1.Update the configuration if the list is empty OR the update interval has passed
+                // Sensor configuration update
                 if (activeSensors.Count == 0 || DateTime.UtcNow - lastConfigFetch > configRefreshInterval)
                 {
                     var refreshedSensors = await FetchSensorConfigurationAsync(configUrl, stoppingToken);
@@ -54,9 +65,9 @@ namespace SmartAgro.IoT
                     }
                     else if (activeSensors.Count == 0)
                     {
-                        _logger.LogWarning("No sensors configured or server unreachable. Waiting...");
+                        _logger.LogWarning("No sensors configured or server unreachable. Retrying in 5 seconds...");
                         await Task.Delay(5000, stoppingToken);
-                        continue; // Skip generation if there are no sensors
+                        continue;
                     }
                     else
                     {
@@ -64,7 +75,7 @@ namespace SmartAgro.IoT
                     }
                 }
 
-                // 2. Generate and send data for each sensor provided by the server
+                // Generation and transmission of data for each sensor
                 foreach (var sensor in activeSensors)
                 {
                     var reading = new SensorReading
@@ -85,14 +96,15 @@ namespace SmartAgro.IoT
             }
         }
 
-        // Helper method to fetch the sensor list from the API
+        /// <summary>
+        /// Requesting sensor configuration with graceful handling of network errors.
+        /// </summary>
         private async Task<List<SensorConfig>> FetchSensorConfigurationAsync(string url, CancellationToken stoppingToken)
         {
             try
             {
                 _logger.LogInformation("Requesting sensor configuration from {Url}...", url);
 
-                // Expecting the server to return a JSON array like: [{"id": 1, "name": "Greenhouse 1"}, ...]
                 var sensors = await _httpClient.GetFromJsonAsync<List<SensorConfig>>(url, stoppingToken);
 
                 if (sensors != null && sensors.Any())
@@ -101,12 +113,20 @@ namespace SmartAgro.IoT
                     return sensors;
                 }
             }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning("Failed to fetch sensor configuration (Backend offline): {Message}", ex.Message);
+            }
+            catch (TaskCanceledException) when (!stoppingToken.IsCancellationRequested)
+            {
+                _logger.LogWarning("Timeout fetching sensor configuration from {Url}", url);
+            }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to fetch sensor configuration: {Message}", ex.Message);
+                _logger.LogError(ex, "Unexpected error fetching sensor configuration.");
             }
 
-            return new List<SensorConfig>(); // Return empty list on failure
+            return new List<SensorConfig>();
         }
         private async Task SendReadingWithRetryAsync(string url, SensorReading reading, CancellationToken stoppingToken)
         {
