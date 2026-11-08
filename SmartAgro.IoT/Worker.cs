@@ -69,25 +69,15 @@ namespace SmartAgro.IoT
                 {
                     var reading = new SensorReading
                     {
-                        SensorId = sensor.Id, // Assign the specific ID from the server
+                        SensorId = sensor.Id,
                         Temperature = Math.Round(_random.NextDouble() * (35.0 - 10.0) + 10.0, 1),
                         SoilHumidity = Math.Round(_random.NextDouble() * (80.0 - 30.0) + 30.0, 1),
                         LightLevel = _random.Next(100, 1000),
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}?C, Humidity: {Hum}%",
-                        sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity);
-
-                    try
-                    {
-                        var response = await _httpClient.PostAsJsonAsync(telemetryUrl, reading, stoppingToken);
-                        _logger.LogInformation("Server response: {StatusCode}", response.StatusCode);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError("Failed to send data for sensor {Id}: {Message}", sensor.Id, ex.Message);
-                    }
+                    // call our new sending method with a retry policy
+                    await SendReadingWithRetryAsync(telemetryUrl, reading, stoppingToken);
                 }
 
                 // 4. Wait for 60 seconds before the next generation cycle
