@@ -26,7 +26,6 @@ namespace SmartAgro.Tests.Services
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
             _httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-            // Створюємо HttpClient з моком HttpMessageHandler
             var httpClient = new HttpClient(_httpMessageHandlerMock.Object)
             {
                 BaseAddress = new Uri("http://localhost:5297/")
@@ -139,14 +138,14 @@ namespace SmartAgro.Tests.Services
         #region ValidateSensorReading Tests
 
         [Theory]
-        [InlineData(25.0, 50.0, 500, true)]   // Нормальні значення
-        [InlineData(-40.0, 0.0, 0, true)]      // Граничні мінімальні
-        [InlineData(80.0, 100.0, 1000, true)]  // Граничні максимальні
-        [InlineData(-40.1, 50.0, 500, false)]  // Температура занизька
-        [InlineData(80.1, 50.0, 500, false)]   // Температура зависока
-        [InlineData(25.0, -0.1, 500, false)]   // Вологість занизька
-        [InlineData(25.0, 100.1, 500, false)]  // Вологість зависока
-        [InlineData(25.0, 50.0, -1, false)]    // Освітленість від'ємна
+        [InlineData(25.0, 50.0, 500, true)]   // Normal values
+        [InlineData(-40.0, 0.0, 0, true)]      // Minimum boundary values
+        [InlineData(80.0, 100.0, 1000, true)]  // Maximum boundary values
+        [InlineData(-40.1, 50.0, 500, false)]  // Temperature too low
+        [InlineData(80.1, 50.0, 500, false)]   // Temperature too high
+        [InlineData(25.0, -0.1, 500, false)]   // Humidity too low
+        [InlineData(25.0, 100.1, 500, false)]  // Humidity too high
+        [InlineData(25.0, 50.0, -1, false)]    // Negative light level
         public void ValidateSensorReading_ValidatesBoundaryConditionsCorrectly(
             double temp, double humidity, int light, bool expectedResult)
         {
@@ -197,7 +196,7 @@ namespace SmartAgro.Tests.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Act & Assert (перевіряємо, що метод успішно виконується без виключень)
+            // Act & Assert
             await worker.SendTelemetryAsync(
                 _httpClientFactoryMock.Object.CreateClient("IotClient"),
                 "/api/microclimate",
