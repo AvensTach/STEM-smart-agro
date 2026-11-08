@@ -26,11 +26,16 @@ namespace SmartAgro.Backend.Controllers
         [ApiKey]
         public async Task<IActionResult> PostReading([FromBody] SensorReading reading)
         {
-            reading.CreatedAt = DateTime.UtcNow;
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
+            reading.CreatedAt = DateTime.UtcNow;
             _context.SensorReadings.Add(reading);
             await _context.SaveChangesAsync();
 
+            // (SignalR logic remains here)
             await _hubContext.Clients.All.SendAsync("ReceiveNewReading", reading);
 
             return Ok(reading);
