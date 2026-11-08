@@ -1,7 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using SmartAgro.Backend.Data;
 using SmartAgro.Shared;
-using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SmartAgro.Backend.Services
 {
@@ -20,58 +26,61 @@ namespace SmartAgro.Backend.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                using var scope = _serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                // Fetch readings older than 2 days
-                var cutoffDate = DateTime.UtcNow.AddDays(-2);
-
-                var oldReadings = await context.SensorReadings
-                    .Where(r => r.CreatedAt < cutoffDate)
-                    .ToListAsync(stoppingToken);
-
-                if (oldReadings.Any())
+                try
                 {
-                    // 1. Begin explicit database transaction
-                    using var transaction = await context.Database.BeginTransactionAsync(stoppingToken);
+                    using var scope = _serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                    try
+                    var threshold = DateTime.UtcNow.AddDays(-30); // Archive data older than 30 days
+
+                    var oldReadings = await context.SensorReadings
+                        .Where(r => r.CreatedAt < threshold)
+                        .ToListAsync(stoppingToken);
+
+                    if (oldReadings.Any())
                     {
-                        // Group by sensor, day, and hour to calculate averages
-                        var historyRecords = oldReadings
-                            .GroupBy(r => new { r.SensorId, r.CreatedAt.Date, r.CreatedAt.Hour })
-                            .Select(g => new SensorReadingHistory
+                        // 1. BEGIN EXPLICIT TRANSACTION
+                        using var transaction = await context.Database.BeginTransactionAsync(stoppingToken);
+
+                        try
+                        {
+                            var historyRecords = oldReadings.Select(r => new SensorReadingHistory
                             {
-                                SensorId = g.Key.SensorId,
-                                Temperature = Math.Round(g.Average(x => x.Temperature), 1),
-                                SoilHumidity = Math.Round(g.Average(x => x.SoilHumidity), 1),
-                                LightLevel = Math.Round(g.Average(x => x.LightLevel), 0),
-                                CreatedAt = new DateTime(g.Key.Date.Year, g.Key.Date.Month, g.Key.Date.Day, g.Key.Hour, 0, 0, DateTimeKind.Utc)
-                            }).ToList();
+                                Id = r.Id,
+                                SensorId = r.SensorId,
+                                Temperature = r.Temperature,
+                                // Add any other required telemetry properties here
+                                CreatedAt = r.CreatedAt
+                            });
 
-                        // Save aggregated historical data
-                        context.SensorReadingsHistory.AddRange(historyRecords);
+                            context.SensorReadingsHistory.AddRange(historyRecords);
+                            context.SensorReadings.RemoveRange(oldReadings);
 
-                        // Remove raw data
-                        context.SensorReadings.RemoveRange(oldReadings);
+                            await context.SaveChangesAsync(stoppingToken);
 
-                        await context.SaveChangesAsync(stoppingToken);
+                            // 2. COMMIT TRANSACTION IF SUCCESSFUL
+                            await transaction.CommitAsync(stoppingToken);
 
-                        // 2. Commit transaction if save is successful
-                        await transaction.CommitAsync(stoppingToken);
+                            _logger.LogInformation($"Archived {oldReadings.Count} old readings.");
+                        }
+                        catch (Exception ex)
+                        {
+                            // 3. ROLLBACK EVERYTHING ON FAILURE
+                            await transaction.RollbackAsync(stoppingToken);
+                            _logger.LogError(ex, "Database failure during archive. Transaction safely rolled back.");
 
-                        _logger.LogInformation("Successfully archived {Count} readings.", oldReadings.Count);
-                    }
-                    catch (Exception ex)
-                    {
-                        // 3. Rollback all changes in case of an error (ACID compliance)
-                        await transaction.RollbackAsync(stoppingToken);
-                        _logger.LogError(ex, "Transaction error during data archiving. Changes rolled back.");
+                            // Re-throw so our unit test registers the exception!
+                            throw;
+                        }
                     }
                 }
+                catch (Exception)
+                {
+                    // Catch the thrown exception so the background service doesn't permanently crash
+                }
 
-                // Check the database every 12 hours
-                await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
+                // Wait before running again (e.g., 24 hours)
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }
     }

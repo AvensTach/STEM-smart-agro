@@ -97,5 +97,26 @@ namespace SmartAgro.Tests.Controllers
             // Assert
             Assert.IsType<ForbidResult>(result);
         }
+        [Fact]
+        public async Task PostReading_InvalidModel_ReturnsBadRequest()
+        {
+            // Arrange
+            var dbContext = await GetDatabaseContext();
+            var mockHub = new Mock<IHubContext<MicroclimateHub>>();
+            var controller = new MicroclimateController(dbContext, mockHub.Object);
+
+            MockUserContext(controller, 101);
+
+            // Force a validation error (simulating a bad JSON payload from the frontend/IoT device)
+            controller.ModelState.AddModelError("Temperature", "Temperature is out of bounds.");
+
+            var invalidReading = new SensorReading { SensorId = 101, Temperature = 9999 };
+
+            // Act
+            var result = await controller.PostReading(invalidReading);
+
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
     }
 }
