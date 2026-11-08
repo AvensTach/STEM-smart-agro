@@ -723,3 +723,4 @@ obj/
 >>>>>>> 8ec57e8eb0b11dd21b4da7793e45188ea99f9d66
 /SmartAgro.Backend/smartagro.db-wal
 /SmartAgro.Backend/smartagro.db-shm
+/coveragereport
