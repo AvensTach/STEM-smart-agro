@@ -8,25 +8,27 @@
 
     <Grid RowDefinitions="Auto, *" Padding="16" RowSpacing="14">
         <Border Grid.Row="0" BackgroundColor="White" StrokeShape="RoundRectangle 14" Stroke="Transparent" Padding="16,12">
-            <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="12" VerticalOptions="Center">
+            <Grid ColumnDefinitions="*, Auto, Auto, Auto" ColumnSpacing="12" VerticalOptions="Center">
                 <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="2">
-                    <Label Text=" SmartAgro: Мульти-об'єктний моніторинг" FontSize="20" FontAttributes="Bold" TextColor="#1B4332"/>
+                    <Label Text="SmartAgro: Мульти-об'єктний моніторинг" FontSize="20" FontAttributes="Bold" TextColor="#1B4332"/>
                     <HorizontalStackLayout Spacing="12">
-                        <Label x:Name="ConnectionStatusLabel" Text=" Завантаження..." FontSize="12" TextColor="#6C757D"/>
-                        <Label x:Name="SignalRStatusLabel" Text=" SignalR: Підключення..." FontSize="12" FontAttributes="Bold" TextColor="#D97706"/>
+                        <Label x:Name="ConnectionStatusLabel" Text="Завантаження..." FontSize="12" TextColor="#6C757D"/>
+                        <Label x:Name="SignalRStatusLabel" Text="SignalR: Підключення..." FontSize="12" FontAttributes="Bold" TextColor="#D97706"/>
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
 
-                <Button Grid.Column="1" x:Name="ShowAllObjectsBtn" Text=" Всі об'єкти" Clicked="OnShowAllObjectsClicked" BackgroundColor="#1B4332" TextColor="White" FontAttributes="Bold" CornerRadius="10" HeightRequest="40" Padding="14,0"/>
-                <Button Grid.Column="2" Text="🔄 Оновити все" Clicked="OnRefreshClicked" BackgroundColor="#E8F5E9" TextColor="#2D6A4F" FontAttributes="Bold" CornerRadius="10" HeightRequest="40" Padding="14,0"/>
+                <Button Grid.Column="1" x:Name="ShowAllObjectsBtn" Text="Всі об'єкти" Clicked="OnShowAllObjectsClicked" BackgroundColor="#1B4332" TextColor="White" FontAttributes="Bold" CornerRadius="10" HeightRequest="40" Padding="14,0"/>
+                <Button Grid.Column="2" Text="Оновити все" Clicked="OnRefreshClicked" BackgroundColor="#E8F5E9" TextColor="#2D6A4F" FontAttributes="Bold" CornerRadius="10" HeightRequest="40" Padding="14,0"/>
+                <Button Grid.Column="3" Text="Вийти" Clicked="OnLogoutClicked" BackgroundColor="#E63946" TextColor="White" FontAttributes="Bold" CornerRadius="10" HeightRequest="40" Padding="14,0"/>
             </Grid>
         </Border>
 
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Spacing="16">
+
                 <VerticalStackLayout Spacing="6">
                     <Grid ColumnDefinitions="*, Auto">
-                        <Label Grid.Column="0" Text=" Активні об'єкти (натисни на картку для фільтрації)" FontSize="16" FontAttributes="Bold" TextColor="#1B4332"/>
+                        <Label Grid.Column="0" Text="Активні об'єкти (натисни на картку для фільтрації)" FontSize="16" FontAttributes="Bold" TextColor="#1B4332"/>
                         <Label Grid.Column="1" x:Name="SelectedObjectBannerLabel" Text="Обрано: Всі об'єкти" FontSize="13" FontAttributes="Bold" TextColor="#2D6A4F"/>
                     </Grid>
 
@@ -73,32 +75,28 @@
                     </CollectionView>
                 </VerticalStackLayout>
 
+                <!-- Блок додавання нового об'єкта (виправлено дублювання) -->
                 <Border BackgroundColor="White" StrokeShape="RoundRectangle 14" Stroke="#E9ECEF" Padding="14">
                     <VerticalStackLayout Spacing="12">
                         <VerticalStackLayout>
-                            <Label Text=" Додати новий об'єкт" FontSize="15" FontAttributes="Bold" TextColor="#1B4332"/>
-                            <Label Text="Введіть назву об'єкта та підтвердіть дію за допомогою ApiKey" FontSize="12" TextColor="#6C757D"/>
+                            <Label Text="Додати новий об'єкт" FontSize="15" FontAttributes="Bold" TextColor="#1B4332"/>
+                            <Label Text="Введіть назву об'єкта. Він буде автоматично прив'язаний до вашого акаунту." FontSize="12" TextColor="#6C757D"/>
                         </VerticalStackLayout>
 
                         <BoxView HeightRequest="1" Color="#E9ECEF"/>
 
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
-                            <VerticalStackLayout Grid.Column="0" Spacing="4">
-                                <Label Text="Назва об'єкта:" FontSize="12" FontAttributes="Bold" TextColor="#495057"/>
-                                <Entry x:Name="NewSensorNameEntry" Placeholder="Напр. Теплиця 2..." BackgroundColor="#F8F9FA"/>
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                <Label Text="X-Api-Key:" FontSize="12" FontAttributes="Bold" TextColor="#495057"/>
-                                <Entry x:Name="ApiKeyEntry" Placeholder="Секретний ключ..." BackgroundColor="#F8F9FA"/>
-                            </VerticalStackLayout>
-                        </Grid>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Назва об'єкта:" FontSize="12" FontAttributes="Bold" TextColor="#495057"/>
+                            <Entry x:Name="NewSensorNameEntry" Placeholder="Напр. Теплиця 2..." BackgroundColor="#F8F9FA"/>
+                        </VerticalStackLayout>
 
                         <Button Text="Додати об'єкт" Clicked="OnAddNewSensorClicked" BackgroundColor="#1B4332" TextColor="White" FontAttributes="Bold" CornerRadius="10" HeightRequest="42"/>
                     </VerticalStackLayout>
                 </Border>
 
+                <!-- Панель графіків -->
                 <VerticalStackLayout x:Name="ChartsPanel" IsVisible="False" Spacing="8">
-                    <Label Text=" Динаміка показників" FontSize="16" FontAttributes="Bold" TextColor="#1B4332"/>
+                    <Label Text="Динаміка показників" FontSize="16" FontAttributes="Bold" TextColor="#1B4332"/>
                     <Grid ColumnDefinitions="*, *" HeightRequest="210" ColumnSpacing="12">
                         <Border Grid.Column="0" BackgroundColor="White" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="8">
                             <VerticalStackLayout>
@@ -116,16 +114,17 @@
                     </Grid>
                 </VerticalStackLayout>
 
+                <!-- Історія та фільтри -->
                 <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
                     <VerticalStackLayout Grid.Column="0">
-                        <Label x:Name="HistoryHeaderLabel" Text="📋 Історія телеметрії (Всі об'єкти)" FontSize="17" FontAttributes="Bold" TextColor="#1B4332"/>
+                        <Label x:Name="HistoryHeaderLabel" Text="Історія телеметрії (Всі об'єкти)" FontSize="17" FontAttributes="Bold" TextColor="#1B4332"/>
                         <Label Text="Клікни на картку об'єкта вище, щоб відфільтрувати список по конкретній локації" FontSize="12" TextColor="#6C757D"/>
                     </VerticalStackLayout>
 
                     <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
                         <Button x:Name="FilterAllBtn" Text="Всі стани" Clicked="OnFilterAllClicked" BackgroundColor="#2D6A4F" TextColor="White" FontSize="12" HeightRequest="34" CornerRadius="8" Padding="12,0"/>
-                        <Button x:Name="FilterHotBtn" Text=" Спека (>28°C)" Clicked="OnFilterHotClicked" BackgroundColor="#E9ECEF" TextColor="#495057" FontSize="12" HeightRequest="34" CornerRadius="8" Padding="12,0"/>
-                        <Button x:Name="FilterDryBtn" Text=" Сухо (&lt;45%)" Clicked="OnFilterDryClicked" BackgroundColor="#E9ECEF" TextColor="#495057" FontSize="12" HeightRequest="34" CornerRadius="8" Padding="12,0"/>
+                        <Button x:Name="FilterHotBtn" Text="Спека (>28°C)" Clicked="OnFilterHotClicked" BackgroundColor="#E9ECEF" TextColor="#495057" FontSize="12" HeightRequest="34" CornerRadius="8" Padding="12,0"/>
+                        <Button x:Name="FilterDryBtn" Text="Сухо (&lt;45%)" Clicked="OnFilterDryClicked" BackgroundColor="#E9ECEF" TextColor="#495057" FontSize="12" HeightRequest="34" CornerRadius="8" Padding="12,0"/>
                     </HorizontalStackLayout>
                 </Grid>
 
@@ -146,11 +145,11 @@
                                         <Label Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}" FontSize="11" TextColor="#868E96"/>
                                     </VerticalStackLayout>
 
-                                    <Label Grid.Column="2" Text="{Binding Temperature, StringFormat=' {0:F1} °C'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#1B4332"/>
-                                    <Label Grid.Column="3" Text="{Binding SoilHumidity, StringFormat=' {0:F1} %'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#0077B6"/>
-                                    <Label Grid.Column="4" Text="{Binding LightLevel, StringFormat=' {0:F0} lx'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#D97706"/>
+                                    <Label Grid.Column="2" Text="{Binding Temperature, StringFormat='{0:F1} °C'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#1B4332"/>
+                                    <Label Grid.Column="3" Text="{Binding SoilHumidity, StringFormat='{0:F1} %'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#0077B6"/>
+                                    <Label Grid.Column="4" Text="{Binding LightLevel, StringFormat='{0:F0} lx'}" VerticalOptions="Center" HorizontalOptions="Center" FontSize="14" FontAttributes="Bold" TextColor="#D97706"/>
 
-                                    <Label Grid.Column="5" Text="Деталі ❯" VerticalOptions="Center" FontSize="12" TextColor="#ADB5BD"/>
+                                    <Label Grid.Column="5" Text="Деталі >" VerticalOptions="Center" FontSize="12" TextColor="#ADB5BD"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>
