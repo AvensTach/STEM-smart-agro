@@ -15,7 +15,7 @@ namespace SmartAgro.IoT
         private readonly HttpClient _httpClient;
 
         private readonly ILogger<Worker> _logger;
-        private readonly IHttpClientFactory _httpClientFactory;
+        // private readonly IHttpClientFactory _httpClientFactory;
         private readonly Random _random;
 
         // Constants for Boundary Checks
