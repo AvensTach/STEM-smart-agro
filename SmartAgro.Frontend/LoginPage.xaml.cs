@@ -63,7 +63,8 @@ public partial class LoginPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Помилка мережі", ex.Message, "ОК");
+            string realError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+            await DisplayAlert("Деталі помилки", realError, "ОК");
         }
         finally
         {

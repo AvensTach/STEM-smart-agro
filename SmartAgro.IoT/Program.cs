@@ -19,7 +19,7 @@ builder.Services.AddTransient<JwtAuthenticationHandler>();
 builder.Services.AddHttpClient("IotClient", (sp, client) =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
-    client.BaseAddress = new Uri(config["IotSettings:BaseUrl"] ?? "http://localhost:5000");
+    client.BaseAddress = new Uri(config["IotSettings:BaseUrl"] ?? "http://10.0.2.2:5297");
 }).AddHttpMessageHandler<JwtAuthenticationHandler>();
 
 builder.Services.AddHostedService<Worker>();
