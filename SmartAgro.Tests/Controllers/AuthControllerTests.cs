@@ -84,5 +84,54 @@ namespace SmartAgro.Tests.Controllers
             var tokenProperty = value.GetType().GetProperty("token");
             Assert.NotNull(tokenProperty);
         }
+        [Fact]
+        public async Task Login_InvalidCredentials_ReturnsUnauthorized()
+        {
+            // Arrange
+            var dbContext = await GetDatabaseContext();
+            var config = GetMockConfiguration();
+            var controller = new AuthController(dbContext, config);
+
+            // Seed a user
+            dbContext.Users.Add(new User
+            {
+                Username = "validuser",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("correctpassword")
+            });
+            await dbContext.SaveChangesAsync();
+
+            // Attempt login with wrong password
+            var request = new AuthController.UserDto { Username = "validuser", Password = "wrongpassword" };
+
+            // Act
+            var result = await controller.Login(request);
+
+            // Assert
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("Invalid credentials.", unauthorizedResult.Value);
+        }
+
+        [Fact]
+        public async Task Register_ExistingUsername_ReturnsBadRequest()
+        {
+            // Arrange
+            var dbContext = await GetDatabaseContext();
+            var config = GetMockConfiguration();
+            var controller = new AuthController(dbContext, config);
+
+            // Seed an existing user
+            dbContext.Users.Add(new User { Username = "existinguser", PasswordHash = "hash" });
+            await dbContext.SaveChangesAsync();
+
+            // Attempt to register the exact same username
+            var request = new AuthController.UserDto { Username = "existinguser", Password = "newpassword" };
+
+            // Act
+            var result = await controller.Register(request);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Username already exists.", badRequestResult.Value);
+        }
     }
 }
