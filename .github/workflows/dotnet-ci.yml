@@ -46,9 +46,9 @@ jobs:
 
     - name: Build Projects
       run: |
-        dotnet build SmartAgro.Backend/SmartAgro.Backend.csproj --configuration Release --no-restore /p:NoWarn="CA1304;CA1305;CA1848;CA2254"
-        dotnet build SmartAgro.IoT/SmartAgro.IoT.csproj --configuration Release --no-restore /p:NoWarn="CA1304;CA1305;CA1848;CA2254"
-        dotnet build SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-restore /p:NoWarn="CA1304;CA1305;CA1848;CA2254"
+        dotnet build SmartAgro.Backend/SmartAgro.Backend.csproj --configuration Release --no-restore /p:NoWarn="CA1304%3BCA1305%3BCA1848%3BCA2254"
+        dotnet build SmartAgro.IoT/SmartAgro.IoT.csproj --configuration Release --no-restore /p:NoWarn="CA1304%3BCA1305%3BCA1848%3BCA2254"
+        dotnet build SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-restore /p:NoWarn="CA1304%3BCA1305%3BCA1848%3BCA2254"
 
     - name: Run Unit Tests
       run: dotnet test SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
