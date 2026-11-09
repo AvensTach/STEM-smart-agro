@@ -45,12 +45,6 @@ namespace SmartAgro.Backend.Data
                     CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 }
             );
-
-            // Update existing seed data to include the UserId foreign key
-            modelBuilder.Entity<SensorConfig>().HasData(
-                new SensorConfig { Id = 1, UserId = 1, Name = "Теплиця 1 (Томати)" },
-                new SensorConfig { Id = 2, UserId = 1, Name = "Поле 3 (Пшениця)" }
-            );
         }
     }
 }

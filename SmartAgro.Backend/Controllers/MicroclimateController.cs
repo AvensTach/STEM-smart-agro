@@ -48,7 +48,8 @@ namespace SmartAgro.Backend.Controllers
             var ownsSensor = await _context.Sensors
                 .AnyAsync(s => s.Id == reading.SensorId && s.UserId == userId);
 
-            if (!ownsSensor)
+            // NEW: Block access ONLY if they don't own the sensor AND they aren't an Admin
+            if (!ownsSensor && !User.IsInRole("Admin"))
             {
                 return Forbid();
             }
@@ -67,6 +68,16 @@ namespace SmartAgro.Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SensorReading>>> GetHistory()
         {
+            if (User.IsInRole("Admin"))
+            {
+                var adminHistory = await _context.SensorReadings
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Take(50)
+                    .ToListAsync();
+
+                return Ok(adminHistory);
+            }
+
             var userId = GetCurrentUserId();
 
             // 1. Get IDs of sensors owned by the user

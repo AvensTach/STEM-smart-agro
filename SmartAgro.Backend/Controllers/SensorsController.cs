@@ -32,9 +32,14 @@ namespace SmartAgro.Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SensorConfig>>> GetSensors()
         {
-            var userId = GetCurrentUserId();
+            // NEW: Worker/Admin gets the global list to start generating data
+            if (User.IsInRole("Admin"))
+            {
+                return Ok(await _context.Sensors.ToListAsync());
+            }
 
-            // Send list of ONLY the logged-in user's sensors
+            // Regular users only get their own sensors
+            var userId = GetCurrentUserId();
             var sensors = await _context.Sensors
                 .Where(s => s.UserId == userId)
                 .ToListAsync();
