@@ -6,7 +6,7 @@ using SmartAgro.Backend.Data;
 using SmartAgro.Backend.Hubs;
 using SmartAgro.Backend.Services;
 using SmartAgro.Shared;
-using System;
+using System.IO;
 using System.Text;
 
 // 1. Initial Serilog Configuration
@@ -89,9 +89,21 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        context.Database.Migrate();
-        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
+        // 1. Get the actual file path from the configured connection string
+        var dbPath = context.Database.GetDbConnection().DataSource;
+
+        // 2. Extract the folder path and create it if it doesn't exist (e.g., "data")
+        var dbDirectory = Path.GetDirectoryName(dbPath);
+        if (!string.IsNullOrEmpty(dbDirectory))
+        {
+            Directory.CreateDirectory(dbDirectory);
+        }
+
+        // 3. Now it is safe to run the migration
+        await context.Database.MigrateAsync();
+
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var workerUsername = config["IotSettings:Username"];
         var workerPassword = config["IotSettings:Password"];
 
@@ -99,15 +111,15 @@ try
         {
             Log.Warning("Seeder skipped: IotSettings Username or Password is missing in Backend appsettings.json.");
         }
-        else if (!context.Users.Any(u => u.Username == workerUsername))
+        else if (!await context.Users.AnyAsync(u => u.Username == workerUsername))
         {
             context.Users.Add(new User
             {
                 Username = workerUsername,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(workerPassword),
-                Role = "Admin" // Only the seeded account gets Admin
+                Role = "Admin"
             });
-            context.SaveChanges();
+            await context.SaveChangesAsync();
             Log.Information("Seeded IoT Worker Admin account.");
         }
     }
@@ -121,5 +133,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }

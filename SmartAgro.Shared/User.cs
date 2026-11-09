@@ -10,16 +10,16 @@ namespace SmartAgro.Shared
 
         [Required]
         [MaxLength(50)]
-        public string Username { get; set; }
+        public required string Username { get; set; }
 
         [Required]
-        public string PasswordHash { get; set; }
+        public required string PasswordHash { get; set; }
 
         public string Role { get; set; } = "User";
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation property
-        public ICollection<SensorConfig> Sensors { get; set; }
+        public ICollection<SensorConfig> Sensors { get; set; } = new List<SensorConfig>();
     }
 }

@@ -34,17 +34,6 @@ namespace SmartAgro.Backend.Data
             .WithOne() // Leave this empty since SensorConfig no longer has the User property
             .HasForeignKey(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade); 
-
-            // Seed a default admin user to own the initial sensors
-            modelBuilder.Entity<User>().HasData(
-                new User
-                {
-                    Id = 1,
-                    Username = "admin",
-                    PasswordHash = "SEED_HASH_REPLACE_VIA_API",
-                    CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
-            );
         }
     }
 }
