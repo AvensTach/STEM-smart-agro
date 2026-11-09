@@ -11,7 +11,5 @@ namespace SmartAgro.Shared
         public required string Name { get; set; }
 
         public int UserId { get; set; }
-
-    
     }
 }

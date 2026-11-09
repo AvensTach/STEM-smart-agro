@@ -82,7 +82,7 @@ namespace SmartAgro.Tests.Controllers
             // Simulate missing "Name" property in JSON
             controller.ModelState.AddModelError("Name", "Name is required.");
 
-            var invalidSensor = new SensorConfig { UserId = 101 };
+            var invalidSensor = new SensorConfig { UserId = 101, Name = null! };
 
             // Act
             var result = await controller.AddSensor(invalidSensor);
