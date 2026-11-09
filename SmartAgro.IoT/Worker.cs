@@ -29,7 +29,7 @@ namespace SmartAgro.IoT
         public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _httpClient = httpClientFactory.CreateClient();
+            _httpClientFactory = httpClientFactory;
             _random = new Random();
         }
 
