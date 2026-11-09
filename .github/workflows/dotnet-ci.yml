@@ -36,7 +36,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
-        dotnet-sonarscanner begin /k:"AvensTach_STEM-smart-agro" /o:"avenstach" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+        dotnet-sonarscanner begin /k:"AvensTach_STEM-smart-agro" /o:"avenstach" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
     - name: Restore dependencies
       run: |
@@ -51,7 +51,7 @@ jobs:
         dotnet build SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-restore
 
     - name: Run Unit Tests
-      run: dotnet test SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-build --verbosity normal
+      run: dotnet test SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
     - name: End SonarCloud Analysis
       env:
