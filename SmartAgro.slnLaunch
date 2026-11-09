@@ -3,19 +3,19 @@
     "Name": "New Profile",
     "Projects": [
       {
-        "Path": "SmartAgro.Frontend\\SmartAgro.Frontend.csproj",
-        "Action": "Start",
-        "DebugTarget": "Windows Machine"
-      },
-      {
         "Path": "SmartAgro.Backend\\SmartAgro.Backend.csproj",
         "Action": "Start",
-        "DebugTarget": "http"
+        "DebugTarget": "https"
       },
       {
         "Path": "SmartAgro.IoT\\SmartAgro.IoT.csproj",
         "Action": "Start",
         "DebugTarget": "SmartAgro.IoT"
+      },
+      {
+        "Path": "SmartAgro.Frontend\\SmartAgro.Frontend.csproj",
+        "Action": "Start",
+        "DebugTarget": "Windows Machine"
       }
     ]
   }
