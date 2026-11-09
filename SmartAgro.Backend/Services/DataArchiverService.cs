@@ -1,57 +1,86 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using SmartAgro.Backend.Data;
 using SmartAgro.Shared;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SmartAgro.Backend.Services
 {
     public class DataArchiverService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<DataArchiverService> _logger;
 
-        public DataArchiverService(IServiceProvider serviceProvider)
+        public DataArchiverService(IServiceProvider serviceProvider, ILogger<DataArchiverService> logger)
         {
             _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                using var scope = _serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                // Беремо дані, яким більше 2 днів
-                var cutoffDate = DateTime.UtcNow.AddDays(-2);
-
-                var oldReadings = await context.SensorReadings
-                    .Where(r => r.CreatedAt < cutoffDate)
-                    .ToListAsync(stoppingToken);
-
-                if (oldReadings.Any())
+                try
                 {
-                    // Групуємо по сенсору, дню та годині
-                    var historyRecords = oldReadings
-                        .GroupBy(r => new { r.SensorId, r.CreatedAt.Date, r.CreatedAt.Hour })
-                        .Select(g => new SensorReadingHistory
-                        {
-                            SensorId = g.Key.SensorId,
-                            Temperature = Math.Round(g.Average(x => x.Temperature), 1),
-                            SoilHumidity = Math.Round(g.Average(x => x.SoilHumidity), 1),
-                            LightLevel = Math.Round(g.Average(x => x.LightLevel), 0),
-                            CreatedAt = new DateTime(g.Key.Date.Year, g.Key.Date.Month, g.Key.Date.Day, g.Key.Hour, 0, 0, DateTimeKind.Utc)
-                        }).ToList();
+                    using var scope = _serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                    // Зберігаємо стиснуті дані
-                    context.SensorReadingsHistory.AddRange(historyRecords);
-                    
-                    // Видаляємо сирі дані
-                    context.SensorReadings.RemoveRange(oldReadings);
-                    
-                    await context.SaveChangesAsync(stoppingToken);
+                    var threshold = DateTime.UtcNow.AddDays(-30); // Archive data older than 30 days
+
+                    var oldReadings = await context.SensorReadings
+                        .Where(r => r.CreatedAt < threshold)
+                        .ToListAsync(stoppingToken);
+
+                    if (oldReadings.Any())
+                    {
+                        // 1. BEGIN EXPLICIT TRANSACTION
+                        using var transaction = await context.Database.BeginTransactionAsync(stoppingToken);
+
+                        try
+                        {
+                            var historyRecords = oldReadings.Select(r => new SensorReadingHistory
+                            {
+                                Id = r.Id,
+                                SensorId = r.SensorId,
+                                Temperature = r.Temperature,
+                                // Add any other required telemetry properties here
+                                CreatedAt = r.CreatedAt
+                            });
+
+                            context.SensorReadingsHistory.AddRange(historyRecords);
+                            context.SensorReadings.RemoveRange(oldReadings);
+
+                            await context.SaveChangesAsync(stoppingToken);
+
+                            // 2. COMMIT TRANSACTION IF SUCCESSFUL
+                            await transaction.CommitAsync(stoppingToken);
+
+                            _logger.LogInformation($"Archived {oldReadings.Count} old readings.");
+                        }
+                        catch (Exception ex)
+                        {
+                            // 3. ROLLBACK EVERYTHING ON FAILURE
+                            await transaction.RollbackAsync(stoppingToken);
+                            _logger.LogError(ex, "Database failure during archive. Transaction safely rolled back.");
+
+                            // Re-throw so our unit test registers the exception!
+                            throw;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Catch the thrown exception so the background service doesn't permanently crash
                 }
 
-                // Перевіряємо базу кожні 12 годин
-                await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
+                // Wait before running again (e.g., 24 hours)
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }
     }

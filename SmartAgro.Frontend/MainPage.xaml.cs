@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.SignalR.Client;
 using SmartAgro.Shared;
 using LiveChartsCore;
@@ -96,15 +97,27 @@ public partial class MainPage : ContentPage
         {
             new Axis
             {
-                Labeler = value => new DateTime((long)value).ToString("HH:mm:ss"),
+                
+                Labeler = value =>
+                {
+                    if (double.IsNaN(value)) return "";
+                    try
+                    {
+                        return new DateTime((long)value).ToString("HH:mm:ss");
+                    }
+                    catch
+                    {
+                        return "";
+                    }
+                },
                 LabelsRotation = 45,
                 TextSize = 10
             }
         };
 
-        BindingContext = this;
-        SensorsOverviewCollection.ItemsSource = SensorCards;
-        ReadingsCollectionView.ItemsSource = DisplayedReadings;
+        //BindingContext = this;
+        //SensorsOverviewCollection.ItemsSource = SensorCards;
+        //ReadingsCollectionView.ItemsSource = DisplayedReadings;
 
         var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (m, c, ch, e) => true };
         _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
@@ -113,6 +126,14 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await Task.Delay(100);
+
+        
+        BindingContext = this;
+        SensorsOverviewCollection.ItemsSource = SensorCards;
+        ReadingsCollectionView.ItemsSource = DisplayedReadings;
+
+       
         await LoadEverythingAsync();
         await ConnectSignalRAsync();
     }
@@ -129,8 +150,13 @@ public partial class MainPage : ContentPage
 
         try
         {
+            var token = await SecureStorage.Default.GetAsync("jwt_token");
+
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl($"{BaseUrl}/hubs/microclimate")
+                .WithUrl($"{BaseUrl}/hubs/microclimate", options =>
+                {
+                    options.AccessTokenProvider = () => Task.FromResult(token);
+                })
                 .WithAutomaticReconnect()
                 .Build();
 
@@ -138,7 +164,7 @@ public partial class MainPage : ContentPage
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    SignalRStatusLabel.Text = " SignalR: Відновлення зв'язку...";
+                    SignalRStatusLabel.Text = "SignalR: Відновлення зв'язку...";
                     SignalRStatusLabel.TextColor = Color.FromArgb("#D97706");
                 });
                 return Task.CompletedTask;
@@ -148,7 +174,7 @@ public partial class MainPage : ContentPage
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    SignalRStatusLabel.Text = " SignalR: Підключено (Real-Time)";
+                    SignalRStatusLabel.Text = "SignalR: Підключено (Real-Time)";
                     SignalRStatusLabel.TextColor = Color.FromArgb("#2D6A4F");
                 });
                 return Task.CompletedTask;
@@ -158,7 +184,7 @@ public partial class MainPage : ContentPage
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    SignalRStatusLabel.Text = " SignalR: Офлайн";
+                    SignalRStatusLabel.Text = "SignalR: Офлайн";
                     SignalRStatusLabel.TextColor = Color.FromArgb("#E63946");
                 });
                 return Task.CompletedTask;
@@ -185,18 +211,18 @@ public partial class MainPage : ContentPage
                         if (_humPoints.Count > 20) _humPoints.RemoveAt(0);
                     }
 
-                    ConnectionStatusLabel.Text = $" SignalR: Нові дані (Об'єкт #{newReading.SensorId})";
+                    ConnectionStatusLabel.Text = $"SignalR: Нові дані (Об'єкт #{newReading.SensorId})";
                     ConnectionStatusLabel.TextColor = Color.FromArgb("#2D6A4F");
                 });
             });
 
             await _hubConnection.StartAsync();
-            SignalRStatusLabel.Text = " SignalR: Підключено (Real-Time)";
+            SignalRStatusLabel.Text = "SignalR: Підключено (Real-Time)";
             SignalRStatusLabel.TextColor = Color.FromArgb("#2D6A4F");
         }
         catch (Exception)
         {
-            SignalRStatusLabel.Text = " SignalR: Офлайн";
+            SignalRStatusLabel.Text = "SignalR: Офлайн";
             SignalRStatusLabel.TextColor = Color.FromArgb("#E63946");
         }
     }
@@ -207,37 +233,56 @@ public partial class MainPage : ContentPage
         _isLoading = true;
         try
         {
-            try
+            var token = await SecureStorage.Default.GetAsync("jwt_token");
+
+            if (string.IsNullOrEmpty(token))
             {
-                var configs = await _httpClient.GetFromJsonAsync<List<SensorConfig>>($"{BaseUrl}/api/sensors");
-                if (configs != null) _sensors = configs;
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    try { await Shell.Current.GoToAsync("//LoginPage"); } catch { }
+                });
+                return;
             }
-            catch { }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // Отримуємо дані у фоні, щоб не блокувати UI
+            List<SensorConfig> configs = null;
+            try { configs = await _httpClient.GetFromJsonAsync<List<SensorConfig>>($"{BaseUrl}/api/sensors"); } catch { }
 
             var history = await _httpClient.GetFromJsonAsync<List<SensorReading>>($"{BaseUrl}/api/microclimate");
 
-            if (history != null && history.Count > 0)
+            // ПРИМУСОВО ОНОВЛЮЄМО ІНТЕРФЕЙС ТІЛЬКИ З ГОЛОВНОГО ПОТОКУ
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                foreach (var item in history) { item.CreatedAt = item.CreatedAt.ToLocalTime(); EnsureSensorExists(item.SensorId); }
-                _allReadings = history;
-                ConnectionStatusLabel.Text = $" Онлайн • Об'єктів: {_sensors.Count} • Записів: {_allReadings.Count}";
-                ConnectionStatusLabel.TextColor = Color.FromArgb("#2D6A4F");
-            }
-            else
-            {
-                _allReadings.Clear();
-                ConnectionStatusLabel.Text = " Очікування перших даних від датчиків...";
-                ConnectionStatusLabel.TextColor = Color.FromArgb("#D97706");
-            }
+                if (configs != null) _sensors = configs;
 
-            RebuildOverviewCards();
-            ApplyFilters();
-            UpdateCharts();
+                if (history != null && history.Count > 0)
+                {
+                    foreach (var item in history) { item.CreatedAt = item.CreatedAt.ToLocalTime(); EnsureSensorExists(item.SensorId); }
+                    _allReadings = history;
+                    ConnectionStatusLabel.Text = $"Онлайн • Об'єктів: {_sensors.Count} • Записів: {_allReadings.Count}";
+                    ConnectionStatusLabel.TextColor = Color.FromArgb("#2D6A4F");
+                }
+                else
+                {
+                    _allReadings.Clear();
+                    ConnectionStatusLabel.Text = "Очікування перших даних від датчиків...";
+                    ConnectionStatusLabel.TextColor = Color.FromArgb("#D97706");
+                }
+
+                RebuildOverviewCards();
+                ApplyFilters();
+                UpdateCharts();
+            });
         }
         catch (Exception ex)
         {
-            ConnectionStatusLabel.Text = $" Помилка: {ex.Message}";
-            ConnectionStatusLabel.TextColor = Color.FromArgb("#E63946");
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                ConnectionStatusLabel.Text = $"Помилка: {ex.Message}";
+                ConnectionStatusLabel.TextColor = Color.FromArgb("#E63946");
+            });
         }
         finally
         {
@@ -276,10 +321,10 @@ public partial class MainPage : ContentPage
                 card.LightDisplay = $"{latest.LightLevel:F0} lx";
                 card.LastUpdatedDisplay = $"Оновлено {latest.CreatedAt:HH:mm:ss}";
 
-                if (latest.Temperature > 28.0 && latest.SoilHumidity < 45.0) { card.StatusText = " Критично"; card.BadgeColor = Color.FromArgb("#C92A2A"); }
-                else if (latest.Temperature > 28.0) { card.StatusText = " Спека"; card.BadgeColor = Color.FromArgb("#D9480F"); }
-                else if (latest.SoilHumidity < 45.0) { card.StatusText = " Сухо"; card.BadgeColor = Color.FromArgb("#1864AB"); }
-                else { card.StatusText = " Норма"; card.BadgeColor = Color.FromArgb("#2D6A4F"); }
+                if (latest.Temperature > 28.0 && latest.SoilHumidity < 45.0) { card.StatusText = "Критично"; card.BadgeColor = Color.FromArgb("#C92A2A"); }
+                else if (latest.Temperature > 28.0) { card.StatusText = "Спека"; card.BadgeColor = Color.FromArgb("#D9480F"); }
+                else if (latest.SoilHumidity < 45.0) { card.StatusText = "Сухо"; card.BadgeColor = Color.FromArgb("#1864AB"); }
+                else { card.StatusText = "Норма"; card.BadgeColor = Color.FromArgb("#2D6A4F"); }
             }
             SensorCards.Add(card);
         }
@@ -376,42 +421,52 @@ public partial class MainPage : ContentPage
         }
     }
 
-   
     private async void OnAddNewSensorClicked(object sender, EventArgs e)
     {
         var sensorName = NewSensorNameEntry.Text;
-        var apiKey = ApiKeyEntry.Text;
 
-        if (string.IsNullOrWhiteSpace(sensorName) || string.IsNullOrWhiteSpace(apiKey))
+        if (string.IsNullOrWhiteSpace(sensorName))
         {
-            await DisplayAlert("Помилка", "Будь ласка, введіть назву об'єкта та ApiKey.", "ОК");
+            await DisplayAlert("Помилка", "Будь ласка, введіть назву об'єкта.", "ОК");
             return;
         }
 
         var newSensor = new SensorConfig { Name = sensorName };
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/api/sensors");
-
-        request.Content = JsonContent.Create(newSensor);
-        request.Headers.Add("X-Api-Key", apiKey.Trim());
 
         try
         {
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/sensors", newSensor);
+
             if (response.IsSuccessStatusCode)
             {
                 await DisplayAlert("Успіх", $"Об'єкт '{sensorName}' успішно додано!", "ОК");
-                NewSensorNameEntry.Text = string.Empty; 
-                await LoadEverythingAsync(); 
+                NewSensorNameEntry.Text = string.Empty;
+                await LoadEverythingAsync();
             }
             else
             {
-                await DisplayAlert("Помилка", $"Не вдалося додати об'єкт (Статус: {response.StatusCode}). Перевірте правильність ApiKey.", "ОК");
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                await DisplayAlert("Помилка", $"Не вдалося додати об'єкт (Статус: {response.StatusCode}). {errorMsg}", "ОК");
             }
         }
         catch (Exception ex)
         {
             await DisplayAlert("Помилка з'єднання", ex.Message, "ОК");
         }
+    }
+
+    private async void OnLogoutClicked(object sender, EventArgs e)
+    {
+        SecureStorage.Default.Remove("jwt_token");
+
+        if (_hubConnection != null)
+        {
+            await _hubConnection.StopAsync();
+            await _hubConnection.DisposeAsync();
+            _hubConnection = null;
+        }
+
+        await Shell.Current.GoToAsync("//LoginPage");
     }
 
     private void OnReadingSelected(object sender, SelectionChangedEventArgs e) => ReadingsCollectionView.SelectedItem = null;
