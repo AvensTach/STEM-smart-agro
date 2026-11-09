@@ -1,12 +1,13 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using SmartAgro.Backend.Data;
 using SmartAgro.Backend.Hubs;
 using SmartAgro.Backend.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using SmartAgro.Shared;
 using System;
-using Serilog;
+using System.Text;
 
 // 1. Initial Serilog Configuration
 Log.Logger = new LoggerConfiguration()
@@ -80,14 +81,41 @@ try
     app.MapControllers();
     app.MapHub<MicroclimateHub>("/hubs/microclimate");
 
+
+    // Securely seed the IoT Worker service account
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+        var workerUsername = config["IotSettings:Username"];
+        var workerPassword = config["IotSettings:Password"];
+
+        if (string.IsNullOrEmpty(workerUsername) || string.IsNullOrEmpty(workerPassword))
+        {
+            Log.Warning("Seeder skipped: IotSettings Username or Password is missing in Backend appsettings.json.");
+        }
+        else if (!context.Users.Any(u => u.Username == workerUsername))
+        {
+            context.Users.Add(new User
+            {
+                Username = workerUsername,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(workerPassword),
+                Role = "Admin" // Only the seeded account gets Admin
+            });
+            context.SaveChanges();
+            Log.Information("Seeded IoT Worker Admin account.");
+        }
+    }
+
     app.Run();
 }
 catch (Exception ex)
 {
     Log.Fatal(ex, "Application terminated unexpectedly");
+    throw; // Re-throw the exception so the process exits with a failure status
 }
 finally
 {
-    // 4. Ensure all logs are flushed to the file before the app fully shuts down
     Log.CloseAndFlush();
 }
