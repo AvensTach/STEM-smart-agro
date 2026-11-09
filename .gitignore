@@ -432,3 +432,10 @@ FodyWeavers.xsd
 *.db
 *.db-shm
 *.db-wal
+
+
+/SmartAgro.Backend/smartagro.db
+
+
+/SmartAgro.Backend/smartagro.db
+*.db-wal

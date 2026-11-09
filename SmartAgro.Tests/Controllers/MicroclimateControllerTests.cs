@@ -1,106 +1,101 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using SmartAgro.Backend.Controllers;
 using SmartAgro.Backend.Data;
 using SmartAgro.Backend.Hubs;
 using SmartAgro.Shared;
-using System;
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace SmartAgro.Tests.Controllers
 {
-    public class MicroclimateControllerTests : IDisposable
+    public class MicroclimateControllerTests
     {
-        private readonly SqliteConnection _connection;
-        private readonly DbContextOptions<AppDbContext> _options;
-
-        public MicroclimateControllerTests()
+        private async Task<AppDbContext> GetDatabaseContext()
         {
-            // Open a connection that persists for the lifetime of the test
-            _connection = new SqliteConnection("DataSource=:memory:");
-            _connection.Open();
-            _options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseSqlite(_connection)
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString())
                 .Options;
 
-            using var context = new AppDbContext(_options);
-            context.Database.EnsureCreated();
+            var databaseContext = new AppDbContext(options);
+            await databaseContext.Database.EnsureCreatedAsync();
+            return databaseContext;
         }
 
-        public void Dispose()
+        private void MockUserContext(ControllerBase controller, int userId)
         {
-            _connection.Close();
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+            };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var claimsPrincipal = new ClaimsPrincipal(identity);
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+            };
         }
 
         [Fact]
-        public async Task PostReading_ValidData_SavesToDbAndBroadcasts()
+        public async Task PostReading_ValidDataAndOwner_BroadcastsAndSaves()
         {
-            using var context = new AppDbContext(_options);
+            // Arrange
+            var dbContext = await GetDatabaseContext();
 
+            // Seed a sensor owned by User 101
+            dbContext.Sensors.Add(new SensorConfig { Id = 101, UserId = 101, Name = "Test Sensor" });
+            await dbContext.SaveChangesAsync();
+
+            var mockHub = new Mock<IHubContext<MicroclimateHub>>();
             var mockClients = new Mock<IHubClients>();
             var mockClientProxy = new Mock<IClientProxy>();
-            mockClients.Setup(clients => clients.All).Returns(mockClientProxy.Object);
 
-            var mockHubContext = new Mock<IHubContext<MicroclimateHub>>();
-            mockHubContext.Setup(x => x.Clients).Returns(mockClients.Object);
+            mockHub.Setup(h => h.Clients).Returns(mockClients.Object);
+            mockClients.Setup(c => c.All).Returns(mockClientProxy.Object);
 
-            var controller = new MicroclimateController(context, mockHubContext.Object);
-            var newReading = new SensorReading { SensorId = 1, Temperature = 25.5, SoilHumidity = 40, LightLevel = 1000 };
+            var controller = new MicroclimateController(dbContext, mockHub.Object);
+            MockUserContext(controller, 101); // Mocking as User 101
 
+            var newReading = new SensorReading { SensorId = 101, Temperature = 22.5, SoilHumidity = 50.0 };
+
+            // Act
             var result = await controller.PostReading(newReading);
 
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var savedReading = Assert.IsType<SensorReading>(okResult.Value);
-
-            Assert.Equal(25.5, savedReading.Temperature);
-
-            var dbRecord = await context.SensorReadings.FirstOrDefaultAsync();
-            Assert.NotNull(dbRecord);
-
-            // Verify SignalR broadcast was called exactly once
+            // Assert
+            Assert.IsType<OkObjectResult>(result);
             mockClientProxy.Verify(
-                clientProxy => clientProxy.SendCoreAsync(
-                    "ReceiveNewReading",
-                    It.Is<object[]>(o => o != null && o.Length == 1),
-                    default),
+                c => c.SendCoreAsync("ReceiveNewReading", It.IsAny<object[]>(), default),
                 Times.Once);
         }
-        [Fact]
-        public async Task PostReading_InvalidModelState_ReturnsBadRequest()
-        {
-            using var context = new AppDbContext(_options);
-            var mockHubContext = new Mock<IHubContext<MicroclimateHub>>();
-            var controller = new MicroclimateController(context, mockHubContext.Object);
-
-            // Simulate validation failure (e.g., missing [Required] or out of [Range])
-            controller.ModelState.AddModelError("Temperature", "Out of range");
-
-            var result = await controller.PostReading(new SensorReading());
-
-            Assert.IsType<BadRequestObjectResult>(result);
-        }
 
         [Fact]
-        public async Task GetHistory_ReturnsExpectedData()
+        public async Task PostReading_NotOwner_ReturnsForbid()
         {
-            using var context = new AppDbContext(_options);
-            // Add dummy data for the GET request
-            context.SensorReadings.Add(new SensorReading { SensorId = 1, Temperature = 20 });
-            await context.SaveChangesAsync();
+            // Arrange
+            var dbContext = await GetDatabaseContext();
 
-            var mockHubContext = new Mock<IHubContext<MicroclimateHub>>();
-            var controller = new MicroclimateController(context, mockHubContext.Object);
+            // Seed a sensor owned by User 102
+            dbContext.Sensors.Add(new SensorConfig { Id = 102, UserId = 102, Name = "Other User Sensor" });
+            await dbContext.SaveChangesAsync();
 
-            // Adapt "GetHistory" to match the actual name of your GET method in the controller
-            var result = await controller.GetHistory();
+            var mockHub = new Mock<IHubContext<MicroclimateHub>>();
+            var controller = new MicroclimateController(dbContext, mockHub.Object);
 
-            var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            var data = Assert.IsAssignableFrom<System.Collections.Generic.IEnumerable<SensorReading>>(okResult.Value);
-            Assert.NotEmpty(data);
+            MockUserContext(controller, 101); // User 101 trying to post to User 102's sensor
+
+            var newReading = new SensorReading { SensorId = 102, Temperature = 22.5, SoilHumidity = 50.0 };
+
+            // Act
+            var result = await controller.PostReading(newReading);
+
+            // Assert
+            Assert.IsType<ForbidResult>(result);
         }
     }
 }

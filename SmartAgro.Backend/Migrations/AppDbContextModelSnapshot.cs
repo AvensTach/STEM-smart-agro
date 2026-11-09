@@ -27,7 +27,12 @@ namespace SmartAgro.Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Sensors");
 
@@ -35,12 +40,14 @@ namespace SmartAgro.Backend.Migrations
                         new
                         {
                             Id = 1,
-                            Name = "Теплиця 1 (Томати)"
+                            Name = "Теплиця 1 (Томати)",
+                            UserId = 1
                         },
                         new
                         {
                             Id = 2,
-                            Name = "Поле 3 (Пшениця)"
+                            Name = "Поле 3 (Пшениця)",
+                            UserId = 1
                         });
                 });
 
@@ -100,6 +107,52 @@ namespace SmartAgro.Backend.Migrations
                     b.HasIndex("CreatedAt");
 
                     b.ToTable("SensorReadingsHistory");
+                });
+
+            modelBuilder.Entity("SmartAgro.Shared.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PasswordHash = "SEED_HASH_REPLACE_VIA_API",
+                            Username = "admin"
+                        });
+                });
+
+            modelBuilder.Entity("SmartAgro.Shared.SensorConfig", b =>
+                {
+                    b.HasOne("SmartAgro.Shared.User", null)
+                        .WithMany("Sensors")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartAgro.Shared.User", b =>
+                {
+                    b.Navigation("Sensors");
                 });
 #pragma warning restore 612, 618
         }
