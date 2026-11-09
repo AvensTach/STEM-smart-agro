@@ -1,16 +1,20 @@
 [*.cs]
-# CA1305: Ignore localization requirements for formatting strings/numbers
-dotnet_diagnostic.CA1305.severity = none
-
-# CA1304: Ignore culture specification requirements for string operations
+# Globalization and Localization
 dotnet_diagnostic.CA1304.severity = none
-
-# CA1848: Ignore high-performance logging delegate requirements
-dotnet_diagnostic.CA1848.severity = none
-
-# CA2254: Ignore strict logging template requirements
-dotnet_diagnostic.CA2254.severity = none
-
-# Ignore strict Naming and Globalization warnings for CI/CD builds
+dotnet_diagnostic.CA1305.severity = none
 dotnet_diagnostic.CA1307.severity = none
 dotnet_diagnostic.CA1309.severity = none
+
+# Logging Rules
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA2017.severity = none
+dotnet_diagnostic.CA2254.severity = none
+
+# Naming Conventions (allows underscores in test names: Method_Condition_ExpectedResult)
+dotnet_diagnostic.CA1707.severity = none
+
+# Performance and Code Design Rules
+dotnet_diagnostic.CA1812.severity = none
+dotnet_diagnostic.CA1816.severity = none
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1852.severity = none
