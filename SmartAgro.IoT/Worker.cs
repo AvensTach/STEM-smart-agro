@@ -1,9 +1,10 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Serilog;
 using SmartAgro.Shared;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using Microsoft.Extensions.Http;
 using System.Net.Http.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -11,8 +12,10 @@ namespace SmartAgro.IoT
 {
     public class Worker : BackgroundService
     {
-        private readonly ILogger<Worker> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
+
+        private readonly ILogger<Worker> _logger;
+        // private readonly IHttpClientFactory _httpClientFactory;
         private readonly Random _random;
 
         // Constants for Boundary Checks
@@ -79,7 +82,7 @@ namespace SmartAgro.IoT
                         continue; // Skipping invalid data
                     }
 
-                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}�C, Humidity: {Hum}%, Light: {Light}",
+                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%, Light: {Light}",
                         sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity, reading.LightLevel);
 
                     // Network Fault Tolerance
@@ -103,11 +106,11 @@ namespace SmartAgro.IoT
             };
         }
 
-        private bool ValidateSensorReading(SensorReading reading, string sensorName)
+        internal bool ValidateSensorReading(SensorReading reading, string sensorName)
         {
             if (reading.Temperature < MinTemperature || reading.Temperature > MaxTemperature)
             {
-                _logger.LogWarning("Boundary check failed for '{Name}' (ID:{Id}): Temperature {Temp}�C out of range [{Min}, {Max}]",
+                _logger.LogWarning("Boundary check failed for '{Name}' (ID:{Id}): Temperature {Temp}°C out of range [{Min}, {Max}]",
                     sensorName, reading.SensorId, reading.Temperature, MinTemperature, MaxTemperature);
                 return false;
             }
@@ -129,7 +132,7 @@ namespace SmartAgro.IoT
             return true;
         }
 
-        private async Task SendTelemetryAsync(HttpClient httpClient, string url, SensorReading reading, int sensorId, CancellationToken stoppingToken)
+        internal async Task SendTelemetryAsync(HttpClient httpClient, string url, SensorReading reading, int sensorId, CancellationToken stoppingToken)
         {
             try
             {
@@ -163,7 +166,7 @@ namespace SmartAgro.IoT
             }
         }
 
-        private async Task<List<SensorConfig>> FetchSensorConfigurationAsync(HttpClient httpClient, string url, CancellationToken stoppingToken)
+        internal async Task<List<SensorConfig>> FetchSensorConfigurationAsync(HttpClient httpClient, string url, CancellationToken stoppingToken)
         {
             try
             {
@@ -197,11 +200,13 @@ namespace SmartAgro.IoT
             int maxRetries = 3;
             int delayMs = 1000;
 
+            var httpClient = _httpClientFactory.CreateClient("IotClient");
+
             for (int retry = 1; retry <= maxRetries; retry++)
             {
                 try
                 {
-                    var response = await _httpClient.PostAsJsonAsync(url, reading, stoppingToken);
+                    var response = await httpClient.PostAsJsonAsync(url, reading, stoppingToken);
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation("Sensor {SensorId} - Data sent successfully.", reading.SensorId);
