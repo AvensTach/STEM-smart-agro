@@ -12,7 +12,7 @@ namespace SmartAgro.IoT
 {
     public class Worker : BackgroundService
     {
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         private readonly ILogger<Worker> _logger;
         // private readonly IHttpClientFactory _httpClientFactory;
@@ -29,7 +29,7 @@ namespace SmartAgro.IoT
         public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _httpClient = httpClientFactory.CreateClient();
+            _httpClientFactory = httpClientFactory;
             _random = new Random();
         }
 
@@ -200,11 +200,13 @@ namespace SmartAgro.IoT
             int maxRetries = 3;
             int delayMs = 1000;
 
+            var httpClient = _httpClientFactory.CreateClient("IotClient");
+
             for (int retry = 1; retry <= maxRetries; retry++)
             {
                 try
                 {
-                    var response = await _httpClient.PostAsJsonAsync(url, reading, stoppingToken);
+                    var response = await httpClient.PostAsJsonAsync(url, reading, stoppingToken);
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation("Sensor {SensorId} - Data sent successfully.", reading.SensorId);
