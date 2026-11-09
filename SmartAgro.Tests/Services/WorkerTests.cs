@@ -278,8 +278,12 @@ namespace SmartAgro.Tests.Services
             var worker = new Worker(_loggerMock.Object, _httpClientFactoryMock.Object);
             var reading = new SensorReading { SensorId = 1, Temperature = 22.5, SoilHumidity = 45.0, LightLevel = 300 };
 
-            // Act & Assert (Should not throw)
-            await worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None);
+            // Act
+            var exception = await Record.ExceptionAsync(() =>
+                worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None));
+
+            // Assert
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -294,8 +298,12 @@ namespace SmartAgro.Tests.Services
             var worker = new Worker(_loggerMock.Object, _httpClientFactoryMock.Object);
             var reading = new SensorReading { SensorId = 1, Temperature = 22.5, SoilHumidity = 45.0, LightLevel = 300 };
 
-            // Act & Assert
-            await worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None);
+            // Act
+            var exception = await Record.ExceptionAsync(() =>
+                worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None));
+
+            // Assert
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -313,8 +321,12 @@ namespace SmartAgro.Tests.Services
             var worker = new Worker(_loggerMock.Object, _httpClientFactoryMock.Object);
             var reading = new SensorReading { SensorId = 1, Temperature = 22.5, SoilHumidity = 45.0, LightLevel = 300 };
 
-            // Act & Assert
-            await worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, cts.Token);
+            // Act
+            var exception = await Record.ExceptionAsync(() =>
+                worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, cts.Token));
+
+            // Assert
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -329,8 +341,12 @@ namespace SmartAgro.Tests.Services
             var worker = new Worker(_loggerMock.Object, _httpClientFactoryMock.Object);
             var reading = new SensorReading { SensorId = 1, Temperature = 22.5, SoilHumidity = 45.0, LightLevel = 300 };
 
-            // Act & Assert
-            await worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None);
+            // Act
+            var exception = await Record.ExceptionAsync(() =>
+                worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None));
+
+            // Assert
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -345,8 +361,12 @@ namespace SmartAgro.Tests.Services
             var worker = new Worker(_loggerMock.Object, _httpClientFactoryMock.Object);
             var reading = new SensorReading { SensorId = 1, Temperature = 22.5, SoilHumidity = 45.0, LightLevel = 300 };
 
-            // Act & Assert
-            await worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None);
+            // Act
+            var exception = await Record.ExceptionAsync(() =>
+                worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None));
+
+            // Assert
+            Assert.Null(exception);
         }
 
         #endregion
