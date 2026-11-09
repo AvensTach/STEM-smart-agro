@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY ["SmartAgro.Backend/SmartAgro.Backend.csproj", "SmartAgro.Backend/"]
+COPY ["SmartAgro.Shared/SmartAgro.Shared.csproj", "SmartAgro.Shared/"]
+RUN dotnet restore "SmartAgro.Backend/SmartAgro.Backend.csproj"
+
+COPY . .
+WORKDIR "/src/SmartAgro.Backend"
+RUN dotnet publish "SmartAgro.Backend.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+EXPOSE 8080
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "SmartAgro.Backend.dll"]

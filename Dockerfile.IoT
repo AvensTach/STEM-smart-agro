@@ -1,0 +1,15 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY ["SmartAgro.IoT/SmartAgro.IoT.csproj", "SmartAgro.IoT/"]
+COPY ["SmartAgro.Shared/SmartAgro.Shared.csproj", "SmartAgro.Shared/"]
+RUN dotnet restore "SmartAgro.IoT/SmartAgro.IoT.csproj"
+
+COPY . .
+WORKDIR "/src/SmartAgro.IoT"
+RUN dotnet publish "SmartAgro.IoT.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/runtime:9.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "SmartAgro.IoT.dll"]
