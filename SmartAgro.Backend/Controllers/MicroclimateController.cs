@@ -48,7 +48,8 @@ namespace SmartAgro.Backend.Controllers
             var ownsSensor = await _context.Sensors
                 .AnyAsync(s => s.Id == reading.SensorId && s.UserId == userId);
 
-            if (!ownsSensor)
+            // NEW: Block access ONLY if they don't own the sensor AND they aren't an Admin
+            if (!ownsSensor && !User.IsInRole("Admin"))
             {
                 return Forbid();
             }

@@ -35,20 +35,6 @@ namespace SmartAgro.Backend.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Sensors");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Теплиця 1 (Томати)",
-                            UserId = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Поле 3 (Пшениця)",
-                            UserId = 1
-                        });
                 });
 
             modelBuilder.Entity("SmartAgro.Shared.SensorReading", b =>
@@ -122,6 +108,10 @@ namespace SmartAgro.Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -137,6 +127,7 @@ namespace SmartAgro.Backend.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             PasswordHash = "SEED_HASH_REPLACE_VIA_API",
+                            Role = "User",
                             Username = "admin"
                         });
                 });

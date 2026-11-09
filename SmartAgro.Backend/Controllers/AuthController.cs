@@ -39,10 +39,17 @@ namespace SmartAgro.Backend.Controllers
                 return BadRequest("Username already exists.");
             }
 
+            // Identify the IoT worker securely on the server side
+            // Read the expected worker username from appsettings.json, defaulting to "iot_worker"
+            var expectedWorkerUsername = _configuration["IotSettings:Username"] ?? "iot-worker-service";
+
             var user = new User
             {
                 Username = request.Username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+
+                // Automatically assign the Admin role if the usernames match
+                Role = request.Username == expectedWorkerUsername ? "Admin" : "User"
             };
 
             _context.Users.Add(user);
@@ -75,7 +82,8 @@ namespace SmartAgro.Backend.Controllers
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username)
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
             };
 
             var token = new JwtSecurityToken(
