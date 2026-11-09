@@ -10,9 +10,15 @@ services:
       - "5297:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - Jwt__Issuer=SmartAgroBackend
+      - Jwt__Audience=SmartAgroClients
+      - IotSettings__Username=iot-worker-service
+      - IotSettings__Password=YOUR_PASSWORD_HERE
     volumes:
       - app_data:/app/data
 
+    
   iot:
     build:
       context: .

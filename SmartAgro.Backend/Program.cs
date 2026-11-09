@@ -86,6 +86,7 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
         var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
         var workerUsername = config["IotSettings:Username"];
