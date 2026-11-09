@@ -176,7 +176,7 @@ namespace SmartAgro.Tests.Services
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                .ThrowsAsync(new Exception("Fatal error"));
+                .ThrowsAsync(new InvalidOperationException("Fatal error")); // <-- Replaced generic Exception with InvalidOperationException
 
             var worker = new Worker(_loggerMock.Object, _httpClientFactoryMock.Object);
 
