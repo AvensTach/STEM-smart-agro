@@ -89,9 +89,9 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        context.Database.Migrate();
-        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        await context.Database.MigrateAsync();
 
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var workerUsername = config["IotSettings:Username"];
         var workerPassword = config["IotSettings:Password"];
 
@@ -99,15 +99,15 @@ try
         {
             Log.Warning("Seeder skipped: IotSettings Username or Password is missing in Backend appsettings.json.");
         }
-        else if (!context.Users.Any(u => u.Username == workerUsername))
+        else if (!await context.Users.AnyAsync(u => u.Username == workerUsername))
         {
             context.Users.Add(new User
             {
                 Username = workerUsername,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(workerPassword),
-                Role = "Admin" // Only the seeded account gets Admin
+                Role = "Admin"
             });
-            context.SaveChanges();
+            await context.SaveChangesAsync();
             Log.Information("Seeded IoT Worker Admin account.");
         }
     }
@@ -121,5 +121,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }
