@@ -90,17 +90,5 @@ namespace SmartAgro.Tests.Controllers
             // Assert
             Assert.IsType<BadRequestObjectResult>(result.Result);
         }
-
-        // Add this test if you have implemented PUT (Update) or DELETE methods
-        [Fact]
-        public async Task UpdateSensor_NonExistentId_ReturnsNotFound()
-        {
-            // Arrange
-            var dbContext = await GetDatabaseContext();
-            var controller = new SensorsController(dbContext);
-
-            MockUserContext(controller, 101);
-            var updateData = new SensorConfig { Name = "Updated Name" };
-        }
     }
 }
