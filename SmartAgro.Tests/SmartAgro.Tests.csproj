@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SmartAgro.Backend\SmartAgro.Backend.csproj" />
+    <ProjectReference Include="..\SmartAgro.IoT\SmartAgro.IoT.csproj" />
     <ProjectReference Include="..\SmartAgro.Shared\SmartAgro.Shared.csproj" />
   </ItemGroup>
 

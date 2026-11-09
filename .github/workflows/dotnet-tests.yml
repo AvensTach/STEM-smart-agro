@@ -1,0 +1,29 @@
+name: Run .NET Unit Tests
+
+on:
+  push:
+    branches: [ "main", "dev", "feature/**", "test/**" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore test project
+      run: dotnet restore SmartAgro.Tests/SmartAgro.Tests.csproj
+
+    - name: Build test project
+      run: dotnet build SmartAgro.Tests/SmartAgro.Tests.csproj --no-restore --configuration Release
+
+    - name: Run unit tests
+      run: dotnet test SmartAgro.Tests/SmartAgro.Tests.csproj --no-build --configuration Release --verbosity normal
