@@ -12,7 +12,7 @@ namespace SmartAgro.IoT
 {
     public class Worker : BackgroundService
     {
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         private readonly ILogger<Worker> _logger;
         // private readonly IHttpClientFactory _httpClientFactory;
