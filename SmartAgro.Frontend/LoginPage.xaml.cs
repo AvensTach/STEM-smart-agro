@@ -16,17 +16,17 @@ public partial class LoginPage : ContentPage
         _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
     }
 
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
+    //protected override async void OnAppearing()
+    //{
+    //    base.OnAppearing();
 
-        // Авто-логін: якщо токен вже є, одразу кидаємо на головний екран
-        var token = await SecureStorage.Default.GetAsync("jwt_token");
-        if (!string.IsNullOrEmpty(token))
-        {
-            await Shell.Current.GoToAsync("//MainPage");
-        }
-    }
+    //    // Авто-логін: якщо токен вже є, одразу кидаємо на головний екран
+    //    var token = await SecureStorage.Default.GetAsync("jwt_token");
+    //    if (!string.IsNullOrEmpty(token))
+    //    {
+    //        await Shell.Current.GoToAsync("//MainPage");
+    //    }
+    //}
 
     private async void OnLoginClicked(object sender, EventArgs e)
     {

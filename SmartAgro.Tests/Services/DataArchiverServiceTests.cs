@@ -32,7 +32,6 @@ namespace SmartAgro.Tests.Services
             _connection.Close();
         }
 
-        // 1. Wrapper to expose the protected ExecuteAsync method
         private class TestableDataArchiver : DataArchiverService
         {
             public TestableDataArchiver(IServiceProvider sp, ILogger<DataArchiverService> logger)
@@ -54,7 +53,8 @@ namespace SmartAgro.Tests.Services
                 {
                     SensorId = 1,
                     Temperature = 20,
-                    CreatedAt = DateTime.UtcNow.AddDays(-3) // Force data to be "old"
+                    // CHANGE THIS to be older than 30 days so the archiver picks it up
+                    CreatedAt = DateTime.UtcNow.AddDays(-40)
                 });
                 seedContext.SaveChanges();
             }
@@ -67,21 +67,11 @@ namespace SmartAgro.Tests.Services
             var service = new TestableDataArchiver(serviceProvider, mockLogger.Object);
 
             using var cts = new CancellationTokenSource();
-
-            // 2. Trigger the task and cancel it almost immediately so the while loop breaks
             var task = service.RunExecuteAsync(cts.Token);
-            cts.CancelAfter(50); // Give it 50ms to run the EF Core logic before cancelling
+            cts.CancelAfter(50);
 
-            try
-            {
-                await task;
-            }
-            catch (TaskCanceledException)
-            {
-                // Expected behavior when breaking the background loop
-            }
+            try { await task; } catch (TaskCanceledException) { }
 
-            // 3. Verify the database transaction worked
             using (var assertContext = new AppDbContext(_options))
             {
                 var rawCount = await assertContext.SensorReadings.CountAsync();
@@ -89,6 +79,56 @@ namespace SmartAgro.Tests.Services
 
                 Assert.Equal(0, rawCount);
                 Assert.Equal(1, historyCount);
+            }
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_WhenExceptionOccurs_RollsBackTransaction()
+        {
+            // Arrange: Seed a primary key conflict to force a crash during the transaction
+            using (var seedContext = new AppDbContext(_options))
+            {
+                seedContext.Database.EnsureCreated();
+
+                // Active reading to be archived
+                seedContext.SensorReadings.Add(new SensorReading
+                {
+                    Id = 500,
+                    SensorId = 1,
+                    Temperature = 20,
+                    CreatedAt = DateTime.UtcNow.AddDays(-40)
+                });
+
+                // Conflicting history reading (will cause a crash when ID 500 is archived)
+                seedContext.SensorReadingsHistory.Add(new SensorReadingHistory
+                {
+                    Id = 500,
+                    SensorId = 1,
+                    Temperature = 99,
+                    CreatedAt = DateTime.UtcNow.AddDays(-40)
+                });
+
+                seedContext.SaveChanges();
+            }
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped(provider => new AppDbContext(_options));
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            var mockLogger = new Mock<ILogger<DataArchiverService>>();
+            var service = new TestableDataArchiver(serviceProvider, mockLogger.Object);
+
+            using var cts = new CancellationTokenSource();
+            var task = service.RunExecuteAsync(cts.Token);
+            cts.CancelAfter(200);
+
+            try { await task; } catch (Exception) { }
+
+            // Assert: Verify the active reading was NOT deleted because the transaction rolled back
+            using (var assertContext = new AppDbContext(_options))
+            {
+                var rawReadingExists = await assertContext.SensorReadings.AnyAsync(r => r.Id == 500);
+                Assert.True(rawReadingExists, "Transaction failed to roll back! Raw reading was deleted.");
             }
         }
     }

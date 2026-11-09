@@ -143,13 +143,11 @@ namespace SmartAgro.Backend.Migrations
 
             modelBuilder.Entity("SmartAgro.Shared.SensorConfig", b =>
                 {
-                    b.HasOne("SmartAgro.Shared.User", "User")
+                    b.HasOne("SmartAgro.Shared.User", null)
                         .WithMany("Sensors")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SmartAgro.Shared.User", b =>
