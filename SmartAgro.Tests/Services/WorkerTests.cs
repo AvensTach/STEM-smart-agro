@@ -121,8 +121,6 @@ namespace SmartAgro.Tests.Services
             await worker.SendTelemetryAsync(_httpClientFactoryMock.Object.CreateClient("IotClient"), "/api/microclimate", reading, 1, CancellationToken.None);
         }
 
-        #endregion
-
         #region FetchSensorConfigurationAsync Exception Tests
 
         [Fact]
