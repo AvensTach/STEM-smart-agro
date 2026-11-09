@@ -9,18 +9,19 @@ dotnet_diagnostic.CA1309.severity = none
 dotnet_diagnostic.CA1848.severity = none
 dotnet_diagnostic.CA2017.severity = none
 dotnet_diagnostic.CA2254.severity = none
+dotnet_diagnostic.S2629.severity = none
 
-# Naming Conventions (allows underscores in test names: Method_Condition_ExpectedResult)
+# Naming Conventions
 dotnet_diagnostic.CA1707.severity = none
 
-# Performance and Code Design Rules
+# Exception Types
+dotnet_diagnostic.CA2201.severity = none
+
+# Performance, Syntax & Code Design Rules
 dotnet_diagnostic.CA1812.severity = none
 dotnet_diagnostic.CA1816.severity = none
 dotnet_diagnostic.CA1822.severity = none
-dotnet_diagnostic.CA1852.severity = 
-
-# Ignore SonarCloud warning: Evaluation of this argument may be expensive (Micro-optimization)
-dotnet_diagnostic.S2629.severity = none
-
-# Ignore pedantic collection initialization suggestions
+dotnet_diagnostic.CA1852.severity = none
+dotnet_diagnostic.CA1860.severity = none
+dotnet_diagnostic.S1155.severity = none
 dotnet_diagnostic.IDE0028.severity = none
