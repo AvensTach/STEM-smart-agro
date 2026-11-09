@@ -26,11 +26,12 @@ namespace SmartAgro.Tests.Controllers
 
         private IConfiguration GetMockConfiguration()
         {
-            var inMemorySettings = new Dictionary<string, string> {
-                {"Jwt:Key", "SuperSecretKeyForUnitTestingMustBe32Chars!"},
-                {"Jwt:Issuer", "TestIssuer"},
-                {"Jwt:Audience", "TestAudience"}
-            };
+            var inMemorySettings = new Dictionary<string, string?> {
+        {"Jwt:Key", "SuperSecretKeyForUnitTestingMustBe32Chars!"},
+        {"Jwt:Issuer", "TestIssuer"},
+        {"Jwt:Audience", "TestAudience"}
+
+        };
 
             return new ConfigurationBuilder()
                 .AddInMemoryCollection(inMemorySettings)
@@ -79,6 +80,9 @@ namespace SmartAgro.Tests.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var value = okResult.Value;
+
+            // Assert value is not null before dereferencing
+            Assert.NotNull(value);
 
             // Use reflection to check if the anonymous object has a "token" property
             var tokenProperty = value.GetType().GetProperty("token");
