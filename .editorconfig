@@ -1,0 +1,27 @@
+[*.cs]
+# Globalization and Localization
+dotnet_diagnostic.CA1304.severity = none
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.CA1309.severity = none
+
+# Logging Rules
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA2017.severity = none
+dotnet_diagnostic.CA2254.severity = none
+dotnet_diagnostic.S2629.severity = none
+
+# Naming Conventions
+dotnet_diagnostic.CA1707.severity = none
+
+# Exception Types
+dotnet_diagnostic.CA2201.severity = none
+
+# Performance, Syntax & Code Design Rules
+dotnet_diagnostic.CA1812.severity = none
+dotnet_diagnostic.CA1816.severity = none
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1852.severity = none
+dotnet_diagnostic.CA1860.severity = none
+dotnet_diagnostic.S1155.severity = none
+dotnet_diagnostic.IDE0028.severity = none

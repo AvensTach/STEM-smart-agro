@@ -1,25 +1,137 @@
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using SmartAgro.Backend.Data;
+using SmartAgro.Backend.Hubs;
+using SmartAgro.Backend.Services;
+using SmartAgro.Shared;
+using System.IO;
+using System.Text;
 
-// Add services to the container.
+// 1. Initial Serilog Configuration
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "logs/log-.txt",
+        rollingInterval: RollingInterval.Day, // Creates daily files like log-20261109.txt
+        fileSizeLimitBytes: 10485760, // 10 MB limit to prevent disk bloat
+        rollOnFileSizeLimit: true,
+        retainedFileCountLimit: 30) // Keeps exactly 30 days of history
+    .CreateLogger();
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Information("Starting SmartAgro Backend Application");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // 2. Override default ASP.NET Core loggers with Serilog
+    builder.Host.UseSerilog();
+
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
+    builder.Services.AddHostedService<DataArchiverService>();
+    builder.Services.AddHostedService<DataCleanupService>();
+    builder.Services.AddSignalR();
+
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                       ?? "Data Source=smartagro.db";
+
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(connectionString));
+
+    var jwtSettings = builder.Configuration.GetSection("Jwt");
+    var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "FallbackSecretKeyForDevelopmentOnly123!");
+
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
+
+    builder.Services.AddAuthorization();
+
+    var app = builder.Build();
+
+    // 3. Enable Serilog HTTP request logging (logs incoming endpoints and response times)
+    app.UseSerilogRequestLogging();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+    app.MapHub<MicroclimateHub>("/hubs/microclimate");
+
+
+    // Securely seed the IoT Worker service account
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // 1. Get the actual file path from the configured connection string
+        var dbPath = context.Database.GetDbConnection().DataSource;
+
+        // 2. Extract the folder path and create it if it doesn't exist (e.g., "data")
+        var dbDirectory = Path.GetDirectoryName(dbPath);
+        if (!string.IsNullOrEmpty(dbDirectory))
+        {
+            Directory.CreateDirectory(dbDirectory);
+        }
+
+        // 3. Now it is safe to run the migration
+        await context.Database.MigrateAsync();
+
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var workerUsername = config["IotSettings:Username"];
+        var workerPassword = config["IotSettings:Password"];
+
+        if (string.IsNullOrEmpty(workerUsername) || string.IsNullOrEmpty(workerPassword))
+        {
+            Log.Warning("Seeder skipped: IotSettings Username or Password is missing in Backend appsettings.json.");
+        }
+        else if (!await context.Users.AnyAsync(u => u.Username == workerUsername))
+        {
+            context.Users.Add(new User
+            {
+                Username = workerUsername,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(workerPassword),
+                Role = "Admin"
+            });
+            await context.SaveChangesAsync();
+            Log.Information("Seeded IoT Worker Admin account.");
+        }
+    }
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw; // Re-throw the exception so the process exits with a failure status
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
+}
