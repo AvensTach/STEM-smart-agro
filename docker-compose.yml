@@ -15,6 +15,7 @@ services:
       - Jwt__Audience=SmartAgroClients
       - IotSettings__Username=iot-worker-service
       - IotSettings__Password=YOUR_PASSWORD_HERE
+      - ConnectionStrings__DefaultConnection=Data Source=data/smartagro.db
     volumes:
       - app_data:/app/data
 

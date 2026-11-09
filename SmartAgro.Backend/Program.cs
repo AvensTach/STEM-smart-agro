@@ -38,8 +38,11 @@ try
     builder.Services.AddHostedService<DataCleanupService>();
     builder.Services.AddSignalR();
 
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                       ?? "Data Source=smartagro.db";
+
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite("Data Source=smartagro.db"));
+        options.UseSqlite(connectionString));
 
     var jwtSettings = builder.Configuration.GetSection("Jwt");
     var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "FallbackSecretKeyForDevelopmentOnly123!");
