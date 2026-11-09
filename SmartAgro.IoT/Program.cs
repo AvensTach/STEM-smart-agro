@@ -14,7 +14,9 @@ Log.Logger = new LoggerConfiguration()
     )
     .CreateLogger();
 
-builder.Services.AddSerilog();
+builder.Logging.ClearProviders();
+builder.Logging.AddSerilog();
+
 builder.Services.AddHttpClient<Worker>();
 builder.Services.AddHostedService<Worker>();
 

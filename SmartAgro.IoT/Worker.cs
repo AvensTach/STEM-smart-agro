@@ -78,102 +78,21 @@ namespace SmartAgro.IoT
                 // Generation and transmission of data for each sensor
                 foreach (var sensor in activeSensors)
                 {
-                    var reading = GenerateReading(sensor.Id);
-
-                    // 2. Boundary Checks
-                    if (!ValidateSensorReading(reading, sensor.Name))
+                    var reading = new SensorReading
                     {
-                        continue; // Skipping invalid data
-                    }
+                        SensorId = sensor.Id,
+                        Temperature = Math.Round(_random.NextDouble() * (35.0 - 10.0) + 10.0, 1),
+                        SoilHumidity = Math.Round(_random.NextDouble() * (80.0 - 30.0) + 30.0, 1),
+                        LightLevel = _random.Next(100, 1000),
+                        CreatedAt = DateTime.UtcNow
+                    };
 
-                    _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%, Light: {Light}",
-                        sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity, reading.LightLevel);
-
-                    // 3. Network Fault Tolerance
-                    await SendTelemetryAsync(telemetryUrl, reading, sensor.Id, stoppingToken);
+                    // call our new sending method with a retry policy
+                    await SendReadingWithRetryAsync(telemetryUrl, reading, stoppingToken);
                 }
 
+                // 4. Wait for 60 seconds before the next generation cycle
                 await Task.Delay(60000, stoppingToken);
-            }
-        }
-
-        private SensorReading GenerateReading(int sensorId)
-        {
-            return new SensorReading
-            {
-                SensorId = sensorId,
-                Temperature = Math.Round(_random.NextDouble() * (35.0 - 10.0) + 10.0, 1),
-                SoilHumidity = Math.Round(_random.NextDouble() * (80.0 - 30.0) + 30.0, 1),
-                LightLevel = _random.Next(100, 1000),
-                CreatedAt = DateTime.UtcNow
-            };
-        }
-
-        /// <summary>
-        /// Checks whether sensor readings fall within permissible limits.
-        /// </summary>
-        private bool ValidateSensorReading(SensorReading reading, string sensorName)
-        {
-            if (reading.Temperature < MinTemperature || reading.Temperature > MaxTemperature)
-            {
-                _logger.LogWarning("Boundary check failed for '{Name}' (ID:{Id}): Temperature {Temp}°C out of range [{Min}, {Max}]",
-                    sensorName, reading.SensorId, reading.Temperature, MinTemperature, MaxTemperature);
-                return false;
-            }
-
-            if (reading.SoilHumidity < MinHumidity || reading.SoilHumidity > MaxHumidity)
-            {
-                _logger.LogWarning("Boundary check failed for '{Name}' (ID:{Id}): Humidity {Hum}% out of range [{Min}, {Max}]",
-                    sensorName, reading.SensorId, reading.SoilHumidity, MinHumidity, MaxHumidity);
-                return false;
-            }
-
-            if (reading.LightLevel < MinLightLevel)
-            {
-                _logger.LogWarning("Boundary check failed for '{Name}' (ID:{Id}): Light level {Light} is negative",
-                    sensorName, reading.SensorId, reading.LightLevel);
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Sending telemetry with graceful handling of network errors.
-        /// </summary>
-        private async Task SendTelemetryAsync(string url, SensorReading reading, int sensorId, CancellationToken stoppingToken)
-        {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync(url, reading, stoppingToken);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation("Successfully sent data for sensor {Id}. Status: {StatusCode}", sensorId, response.StatusCode);
-                }
-                else
-                {
-                    _logger.LogWarning("Server returned non-success code for sensor {Id}: {StatusCode} ({Reason})",
-                        sensorId, (int)response.StatusCode, response.ReasonPhrase);
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                // Backend offline — logging a Warning without a stack trace
-                _logger.LogWarning("Backend offline or unreachable for sensor {Id}: {Message}", sensorId, ex.Message);
-            }
-            catch (TaskCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                _logger.LogInformation("Telemetry request cancelled for sensor {Id} due to service shutdown.", sensorId);
-            }
-            catch (TaskCanceledException)
-            {
-                _logger.LogWarning("Telemetry request timed out for sensor {Id}.", sensorId);
-            }
-            catch (Exception ex)
-            {
-                // Unexpected error — log as Error with details
-                _logger.LogError(ex, "Unexpected error sending telemetry for sensor {Id}", sensorId);
             }
         }
 
@@ -208,6 +127,39 @@ namespace SmartAgro.IoT
             }
 
             return new List<SensorConfig>();
+        }
+        private async Task SendReadingWithRetryAsync(string url, SensorReading reading, CancellationToken stoppingToken)
+        {
+            int maxRetries = 3;
+            int delayMs = 1000;
+
+            for (int retry = 1; retry <= maxRetries; retry++)
+            {
+                try
+                {
+                    var response = await _httpClient.PostAsJsonAsync(url, reading, stoppingToken);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation("Sensor {SensorId} - Data sent successfully.", reading.SensorId);
+                        return;
+                    }
+
+                    _logger.LogWarning("Sensor {SensorId} - Attempt {Retry} failed with status: {Status}",
+                        reading.SensorId, retry, response.StatusCode);
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError("Sensor {SensorId} - Network error on attempt {Retry}: {Message}",
+                        reading.SensorId, retry, ex.Message);
+                }
+
+                if (retry < maxRetries)
+                {
+                    await Task.Delay(delayMs * retry, stoppingToken); // Exponential pause (1s, 2s, 3s)
+                }
+            }
+
+            _logger.LogError("Sensor {SensorId} - Failed to send telemetry after {Max} attempts.", reading.SensorId, maxRetries);
         }
     }
 }
