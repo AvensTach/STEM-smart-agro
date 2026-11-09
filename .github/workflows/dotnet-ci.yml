@@ -1,0 +1,61 @@
+name: .NET CI & SonarCloud Analysis
+
+on:
+  push:
+    branches: [ "dev", "main" ]
+  pull_request:
+    branches: [ "dev", "main" ]
+
+jobs:
+  build-and-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Java (Required for SonarCloud)
+      uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        distribution: 'zulu'
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Install SonarScanner tool
+      run: |
+        dotnet tool install --global dotnet-sonarscanner
+
+    - name: Begin SonarCloud Analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        dotnet-sonarscanner begin /k:"AvensTach_STEM-smart-agro" /o:"avenstach" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+
+    - name: Restore dependencies
+      run: |
+        dotnet restore SmartAgro.Backend/SmartAgro.Backend.csproj
+        dotnet restore SmartAgro.IoT/SmartAgro.IoT.csproj
+        dotnet restore SmartAgro.Tests/SmartAgro.Tests.csproj
+
+    - name: Build Projects
+      run: |
+        dotnet build SmartAgro.Backend/SmartAgro.Backend.csproj --configuration Release --no-restore
+        dotnet build SmartAgro.IoT/SmartAgro.IoT.csproj --configuration Release --no-restore
+        dotnet build SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-restore
+
+    - name: Run Unit Tests
+      run: dotnet test SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-build --verbosity normal
+
+    - name: End SonarCloud Analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
