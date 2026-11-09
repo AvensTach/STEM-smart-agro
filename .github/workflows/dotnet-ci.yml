@@ -36,7 +36,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
-        dotnet-sonarscanner begin /k:"AvensTach_STEM-smart-agro" /o:"avenstach" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.cobertura.reportsPaths="**/TestResults/**/coverage.cobertura.xml"
+        dotnet-sonarscanner begin /k:"AvensTach_STEM-smart-agro" /o:"avenstach" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.cobertura.reportsPaths="**/TestResults/**/coverage.cobertura.xml" /d:sonar.coverage.exclusions="**/*DbContext.cs,**/Migrations/**,**/Models/**,**/DTOs/**,**/SmartAgro.Frontend/**,**/Program.cs,**/SmartAgro.IoT/Models/**" /d:sonar.exclusions="**/Migrations/**,**/SmartAgro.IoT/Models/LoginResponse.cs"
 
     - name: Restore dependencies
       run: |
