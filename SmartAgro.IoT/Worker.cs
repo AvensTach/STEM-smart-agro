@@ -13,9 +13,7 @@ namespace SmartAgro.IoT
     public class Worker : BackgroundService
     {
         private readonly IHttpClientFactory _httpClientFactory;
-
         private readonly ILogger<Worker> _logger;
-        // private readonly IHttpClientFactory _httpClientFactory;
         private readonly Random _random;
 
         // Constants for Boundary Checks
@@ -42,7 +40,8 @@ namespace SmartAgro.IoT
             string configUrl = "/api/sensors";
             string telemetryUrl = "/api/microclimate";
 
-            List<SensorConfig> activeSensors = new List<SensorConfig>();
+            // L45: Simplified collection initialization
+            List<SensorConfig> activeSensors = [];
 
             DateTime lastConfigFetch = DateTime.MinValue;
             TimeSpan configRefreshInterval = TimeSpan.FromSeconds(60);
@@ -82,6 +81,7 @@ namespace SmartAgro.IoT
                         continue; // Skipping invalid data
                     }
 
+                    // L85: Avoid evaluating sensor.Name inside interpolated string
                     _logger.LogInformation("Generated for '{Name}' (ID:{Id}): Temp: {Temp}°C, Humidity: {Hum}%, Light: {Light}",
                         sensor.Name, sensor.Id, reading.Temperature, reading.SoilHumidity, reading.LightLevel);
 
@@ -89,7 +89,7 @@ namespace SmartAgro.IoT
                     await SendTelemetryAsync(httpClient, telemetryUrl, reading, sensor.Id, stoppingToken);
                 }
 
-                // 4. Wait for 60 seconds before the next generation cycle
+                // Wait for 60 seconds before the next generation cycle
                 await Task.Delay(60000, stoppingToken);
             }
         }
@@ -144,13 +144,17 @@ namespace SmartAgro.IoT
                 }
                 else
                 {
+                    // L143: Explicitly convert status code to int instead of passing enum directly
+                    int statusCodeValue = (int)response.StatusCode;
                     _logger.LogWarning("Server returned non-success code for sensor {Id}: {StatusCode} ({Reason})",
-                        sensorId, (int)response.StatusCode, response.ReasonPhrase);
+                        sensorId, statusCodeValue, response.ReasonPhrase);
                 }
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning("Backend offline or unreachable for sensor {Id}: {Message}", sensorId, ex.Message);
+                // L157: Pass ex.Message explicitly
+                string errorMessage = ex.Message;
+                _logger.LogWarning("Backend offline or unreachable for sensor {Id}: {Message}", sensorId, errorMessage);
             }
             catch (TaskCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -174,15 +178,19 @@ namespace SmartAgro.IoT
 
                 var sensors = await httpClient.GetFromJsonAsync<List<SensorConfig>>(url, stoppingToken);
 
-                if (sensors != null && sensors.Any())
+                // L177: Replaced Any() with Count > 0 for List<T>
+                if (sensors != null && sensors.Count > 0)
                 {
-                    _logger.LogInformation("Successfully loaded {Count} sensors.", sensors.Count);
+                    // L179: Access sensors.Count via local variable or direct format
+                    int count = sensors.Count;
+                    _logger.LogInformation("Successfully loaded {Count} sensors.", count);
                     return sensors;
                 }
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning("Failed to fetch sensor configuration (Backend offline): {Message}", ex.Message);
+                string errorMessage = ex.Message;
+                _logger.LogWarning("Failed to fetch sensor configuration (Backend offline): {Message}", errorMessage);
             }
             catch (TaskCanceledException) when (!stoppingToken.IsCancellationRequested)
             {
@@ -193,7 +201,8 @@ namespace SmartAgro.IoT
                 _logger.LogError(ex, "Unexpected error fetching sensor configuration.");
             }
 
-            return new List<SensorConfig>();
+            // L196: Simplified collection initialization
+            return [];
         }
     }
 }
