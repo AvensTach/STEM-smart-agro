@@ -4,6 +4,7 @@ using SmartAgro.Shared;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using Microsoft.Extensions.Http;
 using System.Net.Http.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -11,6 +12,8 @@ namespace SmartAgro.IoT
 {
     public class Worker : BackgroundService
     {
+        private readonly HttpClient _httpClient;
+
         private readonly ILogger<Worker> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly Random _random;
@@ -26,7 +29,7 @@ namespace SmartAgro.IoT
         public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _httpClientFactory = httpClientFactory;
+            _httpClient = httpClientFactory.CreateClient();
             _random = new Random();
         }
 
