@@ -39,13 +39,19 @@ jobs:
         dotnet-sonarscanner begin /k:"AvensTach_STEM-smart-agro" /o:"avenstach" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
 
     - name: Restore dependencies
-      run: dotnet restore SmartAgro.sln
+      run: |
+        dotnet restore SmartAgro.Backend/SmartAgro.Backend.csproj
+        dotnet restore SmartAgro.IoT/SmartAgro.IoT.csproj
+        dotnet restore SmartAgro.Tests/SmartAgro.Tests.csproj
 
-    - name: Build Solution
-      run: dotnet build SmartAgro.sln --configuration Release --no-restore
+    - name: Build Projects
+      run: |
+        dotnet build SmartAgro.Backend/SmartAgro.Backend.csproj --configuration Release --no-restore
+        dotnet build SmartAgro.IoT/SmartAgro.IoT.csproj --configuration Release --no-restore
+        dotnet build SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-restore
 
     - name: Run Unit Tests
-      run: dotnet test SmartAgro.sln --configuration Release --no-build --verbosity normal
+      run: dotnet test SmartAgro.Tests/SmartAgro.Tests.csproj --configuration Release --no-build --verbosity normal
 
     - name: End SonarCloud Analysis
       env:
