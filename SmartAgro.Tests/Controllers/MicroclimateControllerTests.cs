@@ -53,11 +53,20 @@ namespace SmartAgro.Tests.Controllers
             await dbContext.SaveChangesAsync();
 
             var mockHub = new Mock<IHubContext<MicroclimateHub>>();
+
+            // 1. Create a mock for the base interface
             var mockClients = new Mock<IHubClients>();
+
+            // 2. Tell Moq this object ALSO implements the interface that has the .User() method
+            var mockCallerClients = mockClients.As<IHubCallerClients>();
+
             var mockClientProxy = new Mock<IClientProxy>();
 
+            // 3. Return the base interface here (fixes your casting error)
             mockHub.Setup(h => h.Clients).Returns(mockClients.Object);
-            mockClients.Setup(c => c.All).Returns(mockClientProxy.Object);
+
+            // 4. Setup the .User() method on the extended interface
+            mockCallerClients.Setup(c => c.User(It.IsAny<string>())).Returns(mockClientProxy.Object);
 
             var controller = new MicroclimateController(dbContext, mockHub.Object);
             MockUserContext(controller, 101); // Mocking as User 101
