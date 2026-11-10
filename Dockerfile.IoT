@@ -12,7 +12,9 @@ RUN dotnet publish "SmartAgro.IoT.csproj" -c Release -o /app/publish /p:UseAppHo
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
 WORKDIR /app
 
-USER app
 
 COPY --from=build /app/publish .
+
+USER app
+
 ENTRYPOINT ["dotnet", "SmartAgro.IoT.dll"]
