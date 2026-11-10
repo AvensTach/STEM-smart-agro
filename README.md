@@ -24,7 +24,7 @@
 Відкрийте термінал (PowerShell, CMD або Bash) та виконайте:
 
 ```bash
-git clone <посилання-на-ваш-репозиторій>
+git clone https://github.com/AvensTach/STEM-smart-agro.git
 cd STEM-smart-agro
 ```
 
@@ -61,7 +61,7 @@ dotnet new globaljson --sdk-version 8.0.100 --force
 Після того, як бекенд успішно запустився в Docker, відкрийте **нове вікно терміналу** (або продовжуйте в поточному) та запустіть десктопний клієнт під Windows:
 
 ```bash
-dotnet build SmartAgro.Frontend -t:Run -f net8.0-windows10.0.19041.0
+ dotnet run --project SmartAgro.Frontend/SmartAgro.Frontend.csproj -f net8.0-windows10.0.19041.0 -a x64
 ```
 
 Очікуваний результат: Відкриється вікно застосунку SmartAgro, де ви зможете авторизуватись та побачити показники мікроклімату, які генерує IoT Worker.
