@@ -58,8 +58,12 @@ namespace SmartAgro.Backend.Controllers
             _context.SensorReadings.Add(reading);
             await _context.SaveChangesAsync();
 
-            // Broadcast the new reading via SignalR
-            await _hubContext.Clients.All.SendAsync("ReceiveNewReading", reading);
+            var sensorOwnerId = await _context.Sensors
+                .Where(s => s.Id == reading.SensorId)
+                .Select(s => s.UserId)
+                .FirstOrDefaultAsync();
+
+            await _hubContext.Clients.User(sensorOwnerId.ToString()).SendAsync("ReceiveNewReading", reading);
 
             return Ok(reading);
         }
